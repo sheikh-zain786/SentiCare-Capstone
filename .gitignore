@@ -12,6 +12,7 @@ venv/
 # Artifacts / models
 artifacts/
 *.joblib
+*.pkl
 
 # OS
 .DS_Store

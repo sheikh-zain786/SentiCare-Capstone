@@ -1,58 +1,52 @@
 from flask import Flask, request, jsonify
-import joblib
-import pandas as pd
-from conversational_manager import generate_response
-from db import conversations_collection
-import base64
+from flask_cors import CORS
+
+from backend.chatbot.conversation_engine import ConversationEngine
+
 
 app = Flask(__name__)
+CORS(app)
 
-model = joblib.load("artifacts/stress_classifier.joblib")
+engine = ConversationEngine()
 
-@app.route("/chat", methods=["POST"])
-def chat():
+
+@app.route("/screening", methods=["POST"])
+def screening():
+
     data = request.json
-    user_message = data.get("message")
-    language = data.get("language", "en")
+    answers = data.get("answers")
 
-    # Example: Convert message to features (simplified)
-    # You must replace this with real feature extraction
-    features = {
-        "sleep_hours": 5,
-        "study_hours": 8,
-        "anxiety_level": 7
-    }
+    scores = engine.calculate_screening_scores(answers)
 
-    df = pd.DataFrame([features])
-    stress_level = model.predict(df)[0]
+    condition = engine.determine_condition(scores)
 
-    bot_response = generate_response(stress_level, language)
-
-    conversations_collection.insert_one({
-        "user_message": user_message,
-        "stress_level": stress_level,
-        "bot_response": bot_response
-    })
+    questions = engine.get_feature_questions(condition)
 
     return jsonify({
-        "response": bot_response,
-        "audio": None
+        "condition": condition,
+        "questions": questions
     })
 
 
-@app.route("/speak", methods=["POST"])
-def speak():
+@app.route("/predict", methods=["POST"])
+def predict():
+
     data = request.json
-    text = data.get("text")
 
-    # For now, return no audio (you can add TTS later)
-    return jsonify({"audio": None})
+    condition = data.get("condition")
+    features = data.get("features")
 
+    prediction = engine.run_prediction(condition, features)
 
-@app.route("/transcribe", methods=["POST"])
-def transcribe():
-    # You need Whisper or speech-to-text here
-    return jsonify({"text": "Transcription feature not implemented yet"})
+    level = engine.map_prediction_to_level(prediction)
+
+    response = engine.generate_cbt_response(condition, level)
+
+    return jsonify({
+        "prediction": prediction,
+        "level": level,
+        "cbt_response": response
+    })
 
 
 if __name__ == "__main__":

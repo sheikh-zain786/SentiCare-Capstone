@@ -79,3 +79,20 @@ Machine learning project to predict anxiety level (1–10) using physiological a
 
 ## Status
 Baseline model complete.
+
+# SentiCare – AI Mental Health Support Chatbot
+
+SentiCare is an AI-powered mental health support chatbot that detects
+stress and anxiety levels using machine learning models and provides
+CBT-based coping strategies.
+
+## Features
+- Mental health screening
+- Stress prediction model
+- Anxiety prediction model
+- CBT-based therapeutic responses
+- Conversational chatbot
+- MongoDB conversation storage
+
+## Tech Stack
+Python, Flask, React, MongoDB, Scikit-learn, Pandas

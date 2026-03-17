@@ -1,120 +1,75 @@
 import pandas as pd
-import numpy as np
-from sklearn.preprocessing import StandardScaler
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.impute import SimpleImputer
 
 
-class TherapeuticPreprocessor:
-    """
-    Single-source preprocessing pipeline.
-    - Column harmonization
-    - Missing value handling
-    - Categorical encoding
-    - Scaling (fit on train only)
-    """
+class TherapeuticPreprocessor(BaseEstimator, TransformerMixin):
 
     def __init__(self, column_map: dict):
-        """
-        column_map:
-        {
-            "heart_rate": ["Heart Rate (bpm)", "HR"],
-            "sleep_hours": ["Sleep Hours"],
-            ...
-        }
-        """
         self.column_map = column_map
-        self.scaler = StandardScaler()
+        self.column_transformer = None
+        self.numeric_cols_ = None
+        self.categorical_cols_ = None
+        self.feature_names_ = None
 
-        # learned during fit
-        self.numeric_cols = None
-        self.categorical_cols = None
-        self.feature_cols_ = None
-
-    # -------------------------
-    # internal helpers
-    # -------------------------
     def _standardize_columns(self, df: pd.DataFrame) -> pd.DataFrame:
         df = df.copy()
+        new_df = pd.DataFrame()
 
         for canonical, variants in self.column_map.items():
             for v in variants:
                 if v in df.columns:
-                    df[canonical] = df[v]
+                    new_df[canonical] = df[v]
                     break
+            else:
+                raise ValueError(
+                    f"Missing required column for canonical feature: '{canonical}'"
+                )
 
-        return df
+        return new_df
 
-    def _encode(self, df: pd.DataFrame) -> pd.DataFrame:
-        # one-hot encode categoricals
-        return pd.get_dummies(df, columns=self.categorical_cols, drop_first=True)
+    def fit(self, X, y=None):
+        X = self._standardize_columns(X)
 
-    # -------------------------
-    # public API
-    # -------------------------
-    def fit(self, df: pd.DataFrame):
-        """
-        Fit ONLY on training data
-        """
-        df = df.copy()
-        df = self._standardize_columns(df)
+        self.numeric_cols_ = X.select_dtypes(
+            include=["int64", "float64"]
+        ).columns.tolist()
 
-        # infer column types
-        self.numeric_cols = df.select_dtypes(include=["number"]).columns.tolist()
-        self.categorical_cols = df.select_dtypes(
+        self.categorical_cols_ = X.select_dtypes(
             include=["object", "category", "bool"]
         ).columns.tolist()
 
-        # fill missing values (train statistics only)
-        for col in self.numeric_cols:
-            df[col] = df[col].fillna(df[col].median())
+        numeric_pipeline = Pipeline([
+            ("imputer", SimpleImputer(strategy="median")),
+            ("scaler", StandardScaler())
+        ])
 
-        for col in self.categorical_cols:
-            df[col] = df[col].fillna("Unknown")
+        categorical_pipeline = Pipeline([
+            ("imputer", SimpleImputer(strategy="most_frequent")),
+            ("encoder", OneHotEncoder(handle_unknown="ignore"))
+        ])
 
-        # encode
-        df_encoded = self._encode(df)
+        self.column_transformer = ColumnTransformer([
+            ("num", numeric_pipeline, self.numeric_cols_),
+            ("cat", categorical_pipeline, self.categorical_cols_)
+        ])
 
-        # store final feature space
-        self.feature_cols_ = df_encoded.columns.tolist()
-
-        # fit scaler on numeric columns only
-        self.scaler.fit(df_encoded[self.numeric_cols])
+        self.column_transformer.fit(X)
+        self.feature_names_ = self.column_transformer.get_feature_names_out()
 
         return self
 
-    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
-        """
-        Transform train / val / test / inference data
-        """
-        if self.feature_cols_ is None:
-            raise RuntimeError("Preprocessor must be fitted before transform().")
+    def transform(self, X):
+        if self.column_transformer is None:
+            raise RuntimeError("Preprocessor must be fitted first.")
 
-        df = df.copy()
-        df = self._standardize_columns(df)
+        X = self._standardize_columns(X)
+        transformed = self.column_transformer.transform(X)
 
-        # fill missing values using SAME logic
-        for col in self.numeric_cols:
-            if col in df.columns:
-                df[col] = df[col].fillna(df[col].median())
-            else:
-                df[col] = 0
-
-        for col in self.categorical_cols:
-            if col in df.columns:
-                df[col] = df[col].fillna("Unknown")
-            else:
-                df[col] = "Unknown"
-
-        # encode
-        df_encoded = self._encode(df)
-
-        # align columns EXACTLY to training space
-        df_encoded = df_encoded.reindex(
-            columns=self.feature_cols_, fill_value=0
+        return pd.DataFrame(
+            transformed,
+            columns=self.feature_names_
         )
-
-        # scale numeric columns
-        df_encoded[self.numeric_cols] = self.scaler.transform(
-            df_encoded[self.numeric_cols]
-        )
-
-        return df_encoded
