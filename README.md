@@ -98,7 +98,7 @@ cd SentiCare-Capstone
 python -m venv venv
 source venv/bin/activate # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
-python app.py # Runs on http://localhost:5000
+python -m backend.app # Runs on http://localhost:5000
 ```
 ### Frontend Setup
 ```
