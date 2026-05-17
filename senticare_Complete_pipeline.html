@@ -1,0 +1,571 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+.wrap{padding:16px 12px 28px;font-family:var(--font-sans,sans-serif);}
+.sec-label{font-size:10px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;color:var(--color-text-secondary);margin:0 0 7px 3px;}
+.card{border-radius:12px;padding:12px 14px;border:.5px solid;}
+.row{display:flex;gap:8px;align-items:stretch;}
+.col{display:flex;flex-direction:column;gap:8px;}
+.badge{display:inline-block;font-size:10px;font-weight:500;padding:2px 8px;border-radius:20px;margin-bottom:4px;width:fit-content;}
+.fname{font-size:13px;font-weight:500;margin-bottom:3px;}
+.fdesc{font-size:11px;line-height:1.5;opacity:.85;}
+.arr-d{display:flex;justify-content:center;font-size:18px;color:var(--color-text-secondary);margin:3px 0;}
+.arr-r{display:flex;align-items:center;font-size:15px;color:var(--color-text-secondary);padding:0 3px;flex-shrink:0;}
+.snum{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;flex-shrink:0;}
+.pill{display:inline-flex;align-items:center;font-size:10px;font-weight:500;padding:2px 9px;border-radius:20px;margin:2px 3px 2px 0;}
+.block{border-radius:14px;padding:13px;border:1.5px dashed;margin-bottom:13px;}
+.step-row{display:flex;align-items:flex-start;gap:8px;padding:8px 11px;border-radius:8px;border:.5px solid;margin-bottom:5px;}
+.step-title{font-size:12px;font-weight:500;}
+.step-desc{font-size:11px;line-height:1.5;opacity:.85;}
+.big-t{font-size:19px;font-weight:500;color:var(--color-text-primary);text-align:center;margin-bottom:3px;}
+.big-s{font-size:12px;color:var(--color-text-secondary);text-align:center;margin-bottom:16px;}
+.legend{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:18px;}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:4px;}
+.leg-item{display:flex;align-items:center;font-size:11px;color:var(--color-text-secondary);}
+.folder{border-radius:10px;padding:9px 12px;border:.5px solid;flex:1;min-width:100px;}
+.fn{font-size:12px;font-weight:500;margin-bottom:2px;}
+.fd{font-size:10px;line-height:1.45;opacity:.8;}
+.tbl{width:100%;border-collapse:collapse;font-size:11px;}
+.tbl td{padding:4px 6px;border-bottom:.5px solid var(--color-border-tertiary);vertical-align:top;}
+.tbl tr:last-child td{border-bottom:none;}
+.api-box{border-radius:8px;padding:7px 10px;border:.5px solid;margin:4px 0;}
+.api-name{font-size:11px;font-weight:500;}
+.api-desc{font-size:10px;opacity:.8;margin-top:1px;}
+</style>
+
+<div class="wrap">
+
+<div class="big-t">SentiCare Capstone Pipeline</div>
+<div class="big-s">University of Sargodha · Voice-Based AI Mental Health System · Full Detail Map</div>
+
+<div class="legend">
+  <div class="leg-item"><span class="dot" style="background:#7F77DD"></span>Frontend (React)</div>
+  <div class="leg-item"><span class="dot" style="background:#1D9E75"></span>Backend (Flask)</div>
+  <div class="leg-item"><span class="dot" style="background:#D85A30"></span>ML / AI Models</div>
+  <div class="leg-item"><span class="dot" style="background:#378ADD"></span>Database (MongoDB)</div>
+  <div class="leg-item"><span class="dot" style="background:#BA7517"></span>Audio / TTS</div>
+  <div class="leg-item"><span class="dot" style="background:#993556"></span>Docs / Config</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SECTION 1: FOLDER STRUCTURE -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="sec-label">Complete Repository Structure Every Folder Explained</div>
+<div class="block" style="border-color:#AFA9EC;background:#EEEDFE12;">
+  <div style="font-size:12px;font-weight:500;color:#3C3489;margin-bottom:10px;">📁 sheikh-zain786/SentiCare-Capstone 14 Folders + 6 Root Files</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:7px;">
+
+    <div class="folder" style="background:#EEEDFE;border-color:#7F77DD;">
+      <div class="badge" style="background:#CECBF6;color:#3C3489;">REACT</div>
+      <div class="fn" style="color:#3C3489;">senticare-frontend/</div>
+      <div class="fd" style="color:#534AB7;">Full React web app. src/components/ has VoiceCheckIn, TherapyCards, chat UI. App.jsx is root. package.json has dependencies.</div>
+    </div>
+
+    <div class="folder" style="background:#E1F5EE;border-color:#1D9E75;">
+      <div class="badge" style="background:#9FE1CB;color:#085041;">FLASK</div>
+      <div class="fn" style="color:#085041;">backend/</div>
+      <div class="fd" style="color:#0F6E56;">Flask API server. app.py is the main entry point. Contains all REST API routes /voice-intro, /predict, /chat, /tts.</div>
+    </div>
+
+    <div class="folder" style="background:#FAECE7;border-color:#D85A30;">
+      <div class="badge" style="background:#F5C4B3;color:#712B13;">ML</div>
+      <div class="fn" style="color:#993C1D;">artifacts/</div>
+      <div class="fd" style="color:#993C1D;">Trained ML model files saved as .joblib. Includes preprocessor pipeline + classifiers for anxiety, stress, depression.</div>
+    </div>
+
+    <div class="folder" style="background:#FAEEDA;border-color:#EF9F27;">
+      <div class="badge" style="background:#FAC775;color:#633806;">DATA</div>
+      <div class="fn" style="color:#854F0B;">data/</div>
+      <div class="fd" style="color:#854F0B;">CSV datasets from Kaggle (Student Mental Health Survey). Raw training data for anxiety, stress, depression models.</div>
+    </div>
+
+    <div class="folder" style="background:#FAEEDA;border-color:#BA7517;">
+      <div class="badge" style="background:#FAC775;color:#633806;">JUPYTER</div>
+      <div class="fn" style="color:#854F0B;">notebooks/</div>
+      <div class="fd" style="color:#854F0B;">Jupyter notebooks (.ipynb) used for EDA, feature engineering, and model training experiments.</div>
+    </div>
+
+    <div class="folder" style="background:#FAECE7;border-color:#F0997B;">
+      <div class="badge" style="background:#F5C4B3;color:#712B13;">PYTHON</div>
+      <div class="fn" style="color:#993C1D;">preprocessing/</div>
+      <div class="fd" style="color:#993C1D;">Scripts that clean and transform raw CSV data before it is fed into ML training.</div>
+    </div>
+
+    <div class="folder" style="background:#E1F5EE;border-color:#5DCAA5;">
+      <div class="badge" style="background:#9FE1CB;color:#085041;">PYTHON</div>
+      <div class="fn" style="color:#085041;">training/</div>
+      <div class="fd" style="color:#0F6E56;">Scripts that train the scikit-learn models and save the final .joblib artifact files.</div>
+    </div>
+
+    <div class="folder" style="background:#FBEAF0;border-color:#ED93B1;">
+      <div class="badge" style="background:#F4C0D1;color:#72243E;">HTML</div>
+      <div class="fn" style="color:#993556;">templates/</div>
+      <div class="fd" style="color:#72243E;">Flask HTML template files used for server-side rendered pages (if any).</div>
+    </div>
+
+    <div class="folder" style="background:#F1EFE8;border-color:#B4B2A9;">
+      <div class="badge" style="background:#D3D1C7;color:#2C2C2A;">DOCS</div>
+      <div class="fn" style="color:#444441;">Design Document/</div>
+      <div class="fd" style="color:#444441;">Full technical design document in Word + PDF format. Architecture diagrams, data models, team decisions.</div>
+    </div>
+
+    <div class="folder" style="background:#F1EFE8;border-color:#B4B2A9;">
+      <div class="badge" style="background:#D3D1C7;color:#2C2C2A;">DOCS</div>
+      <div class="fn" style="color:#444441;">SentiCare SRS/</div>
+      <div class="fd" style="color:#444441;">Software Requirements Specification. Functional + non-functional requirements of the system.</div>
+    </div>
+
+    <div class="folder" style="background:#F1EFE8;border-color:#888780;">
+      <div class="badge" style="background:#D3D1C7;color:#2C2C2A;">DIAGRAMS</div>
+      <div class="fn" style="color:#444441;">SentiCare Diagrams/</div>
+      <div class="fd" style="color:#444441;">UML diagrams: Class diagram, ER diagram, Sequence diagram, Use Case diagram.</div>
+    </div>
+
+    <div class="folder" style="background:#EEEDFE;border-color:#AFA9EC;">
+      <div class="badge" style="background:#CECBF6;color:#3C3489;">PDF/PPTX</div>
+      <div class="fn" style="color:#3C3489;">Presentation/</div>
+      <div class="fd" style="color:#534AB7;">Final project presentation slides for viva and evaluation.</div>
+    </div>
+
+    <div class="folder" style="background:#EAF3DE;border-color:#97C459;">
+      <div class="badge" style="background:#C0DD97;color:#27500A;">DOCS</div>
+      <div class="fn" style="color:#3B6D11;">proposal/</div>
+      <div class="fd" style="color:#3B6D11;">Initial project proposal submitted to supervisor Dr. Saad Razaq.</div>
+    </div>
+
+    <div class="folder" style="background:#E6F1FB;border-color:#85B7EB;">
+      <div class="badge" style="background:#B5D4F4;color:#0C447C;">MISC</div>
+      <div class="fn" style="color:#185FA5;">artifacts/ (SentiCare file)</div>
+      <div class="fd" style="color:#185FA5;">Binary blob file compiled or packaged SentiCare application artifact.</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SECTION 2: ROOT FILES -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="sec-label">Root Files 6 Files Sitting at the Top Level</div>
+<div class="block" style="border-color:#5DCAA5;background:#E1F5EE12;">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:7px;">
+
+    <div class="card" style="background:#E1F5EE;border-color:#1D9E75;">
+      <div class="badge" style="background:#9FE1CB;color:#085041;">PYTHON</div>
+      <div class="fname" style="color:#085041;">db.py</div>
+      <div class="fdesc" style="color:#0F6E56;">MongoDB integration. Connects to Atlas via MONGO_URI env var. Defines all 5 database collections + save functions. The database layer of the whole app.</div>
+    </div>
+
+    <div class="card" style="background:#FAEEDA;border-color:#EF9F27;">
+      <div class="badge" style="background:#FAC775;color:#633806;">TEXT</div>
+      <div class="fname" style="color:#854F0B;">requirements.txt</div>
+      <div class="fdesc" style="color:#854F0B;">7 core Python libraries: flask, flask-cors, gtts, requests, numpy, joblib, pandas.</div>
+    </div>
+
+    <div class="card" style="background:#EEEDFE;border-color:#7F77DD;">
+      <div class="badge" style="background:#CECBF6;color:#3C3489;">PYTHON</div>
+      <div class="fname" style="color:#3C3489;">test_mongo.py</div>
+      <div class="fdesc" style="color:#534AB7;">8-line test script. Pings MongoDB to verify database connection is working. Run before starting the app.</div>
+    </div>
+
+    <div class="card" style="background:#F1EFE8;border-color:#B4B2A9;">
+      <div class="badge" style="background:#D3D1C7;color:#2C2C2A;">PDF</div>
+      <div class="fname" style="color:#444441;">SentiCare SRS.pdf</div>
+      <div class="fdesc" style="color:#444441;">Full Software Requirements Specification document in PDF format.</div>
+    </div>
+
+    <div class="card" style="background:#F1EFE8;border-color:#888780;">
+      <div class="badge" style="background:#D3D1C7;color:#2C2C2A;">CONFIG</div>
+      <div class="fname" style="color:#444441;">.gitignore</div>
+      <div class="fdesc" style="color:#444441;">Tells Git what NOT to upload e.g. venv/, .env secrets, __pycache__.</div>
+    </div>
+
+    <div class="card" style="background:#F1EFE8;border-color:#888780;">
+      <div class="badge" style="background:#D3D1C7;color:#2C2C2A;">LICENSE</div>
+      <div class="fname" style="color:#444441;">LICENSE (MIT)</div>
+      <div class="fdesc" style="color:#444441;">MIT License anyone can use/modify/distribute the code freely.</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SECTION 3: DB.PY DEEP DIVE -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="sec-label">db.py Deep Dive MongoDB Collections & Functions</div>
+<div class="block" style="border-color:#378ADD;background:#E6F1FB12;">
+  <div style="font-size:12px;font-weight:500;color:#0C447C;margin-bottom:9px;">5 MongoDB Collections (like database tables) defined in db.py</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:7px;margin-bottom:12px;">
+    <div class="card" style="background:#E6F1FB;border-color:#378ADD;">
+      <div class="badge" style="background:#B5D4F4;color:#0C447C;">sessions</div>
+      <div class="fdesc" style="color:#185FA5;">Stores session ID, language, voice emotion, timestamps. Auto-deletes after 90 days (TTL index).</div>
+    </div>
+    <div class="card" style="background:#E6F1FB;border-color:#85B7EB;">
+      <div class="badge" style="background:#B5D4F4;color:#0C447C;">biomarkers</div>
+      <div class="fdesc" style="color:#185FA5;">Stores raw voice features: pitch, tone, MFCC mean values + emotion probability scores.</div>
+    </div>
+    <div class="card" style="background:#E6F1FB;border-color:#85B7EB;">
+      <div class="badge" style="background:#B5D4F4;color:#0C447C;">chat_history</div>
+      <div class="fdesc" style="color:#185FA5;">Every single chat message (user + assistant) stored with role, stage, and timestamp.</div>
+    </div>
+    <div class="card" style="background:#E6F1FB;border-color:#85B7EB;">
+      <div class="badge" style="background:#B5D4F4;color:#0C447C;">predictions</div>
+      <div class="fdesc" style="color:#185FA5;">Final ML prediction results: condition, level (mild/moderate/severe), all input features used.</div>
+    </div>
+    <div class="card" style="background:#E6F1FB;border-color:#85B7EB;">
+      <div class="badge" style="background:#B5D4F4;color:#0C447C;">feedback</div>
+      <div class="fdesc" style="color:#185FA5;">Thumbs up/down votes from user on chatbot responses. Stored with reward integer for future RL.</div>
+    </div>
+  </div>
+
+  <div style="font-size:11px;font-weight:500;color:#0C447C;margin-bottom:6px;">5 Functions in db.py Plain English</div>
+  <div style="display:flex;flex-direction:column;gap:5px;">
+    <div style="display:flex;gap:7px;padding:6px 10px;border-radius:7px;background:#B5D4F4;border:.5px solid #378ADD;">
+      <span class="snum" style="background:#E6F1FB;color:#0C447C;">1</span>
+      <div><span class="step-title" style="color:#0C447C;">save_session()</span> <span class="step-desc" style="color:#185FA5;margin-left:5px;"> Called after voice intro. Saves session ID + detected voice emotion to sessions collection.</span></div>
+    </div>
+    <div style="display:flex;gap:7px;padding:6px 10px;border-radius:7px;background:#E6F1FB;border:.5px solid #85B7EB;">
+      <span class="snum" style="background:#B5D4F4;color:#0C447C;">2</span>
+      <div><span class="step-title" style="color:#0C447C;">save_biomarkers()</span> <span class="step-desc" style="color:#185FA5;margin-left:5px;"> Saves raw pitch/tone/MFCC values + emotion probability scores to biomarkers collection.</span></div>
+    </div>
+    <div style="display:flex;gap:7px;padding:6px 10px;border-radius:7px;background:#E6F1FB;border:.5px solid #85B7EB;">
+      <span class="snum" style="background:#B5D4F4;color:#0C447C;">3</span>
+      <div><span class="step-title" style="color:#0C447C;">save_chat_message()</span> <span class="step-desc" style="color:#185FA5;margin-left:5px;"> Inserts every single message (user or AI) into chat_history with timestamp.</span></div>
+    </div>
+    <div style="display:flex;gap:7px;padding:6px 10px;border-radius:7px;background:#E6F1FB;border:.5px solid #85B7EB;">
+      <span class="snum" style="background:#B5D4F4;color:#0C447C;">4</span>
+      <div><span class="step-title" style="color:#0C447C;">save_prediction()</span> <span class="step-desc" style="color:#185FA5;margin-left:5px;"> Saves the final ML result: condition (anxiety/stress/depression), severity level, all features.</span></div>
+    </div>
+    <div style="display:flex;gap:7px;padding:6px 10px;border-radius:7px;background:#E6F1FB;border:.5px solid #85B7EB;">
+      <span class="snum" style="background:#B5D4F4;color:#0C447C;">5</span>
+      <div><span class="step-title" style="color:#0C447C;">save_feedback()</span> <span class="step-desc" style="color:#185FA5;margin-left:5px;"> Saves thumbs up (+1) / thumbs down (-1) vote to feedback collection for RLHF future use.</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SECTION 4: ML PIPELINE -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="sec-label">ML Training Pipeline From Raw Data to .joblib Model</div>
+<div class="block" style="border-color:#D85A30;background:#FAECE712;">
+
+  <div class="row" style="flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+
+    <div class="col" style="flex:1;min-width:130px;">
+      <div class="card" style="background:#FAEEDA;border-color:#EF9F27;">
+        <div class="badge" style="background:#FAC775;color:#633806;">STEP 1</div>
+        <div class="fname" style="color:#854F0B;">Raw Data (data/)</div>
+        <div class="fdesc" style="color:#854F0B;">Kaggle CSV: Student Mental Health Survey. Contains columns: anxiety score, stress score, depression score, sleep hours, gender, age, academic performance, etc.</div>
+      </div>
+    </div>
+    <div class="arr-r">→</div>
+
+    <div class="col" style="flex:1;min-width:130px;">
+      <div class="card" style="background:#FAECE7;border-color:#D85A30;">
+        <div class="badge" style="background:#F5C4B3;color:#712B13;">STEP 2</div>
+        <div class="fname" style="color:#993C1D;">Preprocessing (preprocessing/)</div>
+        <div class="fdesc" style="color:#993C1D;">Python scripts clean data: handle missing values, encode categories (gender → 0/1), normalize numeric columns, split into train/test sets.</div>
+      </div>
+    </div>
+    <div class="arr-r">→</div>
+
+    <div class="col" style="flex:1;min-width:130px;">
+      <div class="card" style="background:#FAECE7;border-color:#993C1D;">
+        <div class="badge" style="background:#F5C4B3;color:#712B13;">STEP 3</div>
+        <div class="fname" style="color:#993C1D;">Training (training/ + notebooks/)</div>
+        <div class="fdesc" style="color:#993C1D;">Jupyter notebooks experiment with models. Final scripts train scikit-learn classifiers (Random Forest / SVM / Logistic Regression) on anxiety, stress, depression.</div>
+      </div>
+    </div>
+    <div class="arr-r">→</div>
+
+    <div class="col" style="flex:1;min-width:130px;">
+      <div class="card" style="background:#FAECE7;border-color:#D85A30;">
+        <div class="badge" style="background:#F5C4B3;color:#712B13;">STEP 4</div>
+        <div class="fname" style="color:#993C1D;">Artifacts (artifacts/)</div>
+        <div class="fdesc" style="color:#993C1D;">Trained model + preprocessor saved as .joblib files. These are loaded at Flask startup using joblib.load(). No retraining needed at runtime.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="font-size:11px;color:var(--color-text-secondary);text-align:center;margin-top:4px;">The .joblib files in artifacts/ are the "frozen brain" trained once offline, used forever in production</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SECTION 5: COMPLETE USER JOURNEY PIPELINE -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="sec-label">Full User Journey Step by Step (What Happens in Real Time)</div>
+<div class="block" style="border-color:#1D9E75;background:#E1F5EE12;">
+
+  <!-- STEP 1 -->
+  <div class="step-row" style="background:#E6F1FB;border-color:#85B7EB;">
+    <span class="snum" style="background:#B5D4F4;color:#0C447C;margin-top:1px;">1</span>
+    <div>
+      <div class="step-title" style="color:#0C447C;">User opens browser → React app loads (localhost:3000)</div>
+      <div class="step-desc" style="color:#185FA5;">React fetches from Flask backend at localhost:5000. User grants microphone permission. MediaRecorder API is initialized in browser. Language selected (English or Urdu).</div>
+    </div>
+  </div>
+  <div class="arr-d">↓</div>
+
+  <!-- STEP 2 -->
+  <div class="step-row" style="background:#EEEDFE;border-color:#AFA9EC;">
+    <span class="snum" style="background:#CECBF6;color:#3C3489;margin-top:1px;">2</span>
+    <div>
+      <div class="step-title" style="color:#3C3489;">Voice Check-In 30-second recording (VoiceCheckIn component)</div>
+      <div class="step-desc" style="color:#534AB7;">User clicks "Start Voice Check-In". Browser MediaRecorder captures up to 30 seconds of audio as a WAV/WebM blob. A timer counts down. Frontend extracts voice biomarkers: pitch (fundamental frequency), tone (spectral centroid), rhythm (speech rate), and MFCC (Mel-frequency cepstral coefficients) using Web Audio API before sending.</div>
+    </div>
+  </div>
+  <div class="arr-d">↓</div>
+
+  <!-- STEP 3 -->
+  <div class="step-row" style="background:#E1F5EE;border-color:#1D9E75;">
+    <span class="snum" style="background:#9FE1CB;color:#085041;margin-top:1px;">3</span>
+    <div>
+      <div class="step-title" style="color:#085041;">POST /voice-intro → Flask receives voice features</div>
+      <div class="step-desc" style="color:#0F6E56;">React sends extracted features via HTTP POST to Flask API. Flask calls save_biomarkers() in db.py to store pitch, tone, MFCC values in MongoDB biomarkers collection. Flask runs a rule-based OR ML-based voice emotion classification: maps voice features to one dominant emotion (calm, anxious, sad, neutral). Calls save_session() with the dominant emotion.</div>
+      <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:3px;">
+        <span class="pill" style="background:#9FE1CB;color:#085041;">calm</span>
+        <span class="pill" style="background:#9FE1CB;color:#085041;">anxious</span>
+        <span class="pill" style="background:#9FE1CB;color:#085041;">sad</span>
+        <span class="pill" style="background:#9FE1CB;color:#085041;">neutral</span>
+        <span class="pill" style="background:#9FE1CB;color:#085041;">distressed</span>
+      </div>
+    </div>
+  </div>
+  <div class="arr-d">↓</div>
+
+  <!-- STEP 4 -->
+  <div class="step-row" style="background:#FAEEDA;border-color:#EF9F27;">
+    <span class="snum" style="background:#FAC775;color:#633806;margin-top:1px;">4</span>
+    <div>
+      <div class="step-title" style="color:#854F0B;">Questionnaire User answers follow-up mood questions</div>
+      <div class="step-desc" style="color:#854F0B;">React shows TherapyCards component with questions: How many hours did you sleep? How stressed do you feel (1-10)? How is your academic/work performance? Are you socially withdrawn? These are standardized GAD-7 / PHQ-9 style screening questions. Answers collected as structured JSON.</div>
+    </div>
+  </div>
+  <div class="arr-d">↓</div>
+
+  <!-- STEP 5 -->
+  <div class="step-row" style="background:#FAECE7;border-color:#D85A30;">
+    <span class="snum" style="background:#F5C4B3;color:#712B13;margin-top:1px;">5</span>
+    <div>
+      <div class="step-title" style="color:#993C1D;">POST /predict → ML Fusion Model runs</div>
+      <div class="step-desc" style="color:#993C1D;">React sends questionnaire answers + voice emotion to Flask. Flask loads artifacts/*.joblib (preprocessor + classifier). Preprocessor transforms answers into numeric feature vector. ML model predicts: condition (anxiety / stress / depression) AND level (mild / moderate / severe). Fusion: voice emotion is blended with survey score to adjust final prediction. Flask calls save_prediction() → stored in MongoDB predictions collection.</div>
+      <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:3px;">
+        <span class="pill" style="background:#F5C4B3;color:#712B13;">anxiety: moderate</span>
+        <span class="pill" style="background:#F5C4B3;color:#712B13;">stress: mild</span>
+        <span class="pill" style="background:#F5C4B3;color:#712B13;">depression: low</span>
+      </div>
+    </div>
+  </div>
+  <div class="arr-d">↓</div>
+
+  <!-- STEP 6 -->
+  <div class="step-row" style="background:#EEEDFE;border-color:#7F77DD;">
+    <span class="snum" style="background:#CECBF6;color:#3C3489;margin-top:1px;">6</span>
+    <div>
+      <div class="step-title" style="color:#3C3489;">Therapeutic Chatbot Empathetic conversation begins</div>
+      <div class="step-desc" style="color:#534AB7;">Flask returns the prediction + an initial empathetic message. React displays it in the chat UI. User continues chatting. Every user message → POST /chat → Flask builds a response using the prediction context + chat history. Rule-based OR LLM-powered responses suggest coping exercises (breathing, journaling, grounding). Every message pair saved via save_chat_message() to MongoDB.</div>
+    </div>
+  </div>
+  <div class="arr-d">↓</div>
+
+  <!-- STEP 7 -->
+  <div class="step-row" style="background:#FAEEDA;border-color:#BA7517;">
+    <span class="snum" style="background:#FAC775;color:#633806;margin-top:1px;">7</span>
+    <div>
+      <div class="step-title" style="color:#854F0B;">Text-to-Speech (Edge-TTS / gTTS) Bot speaks the response</div>
+      <div class="step-desc" style="color:#854F0B;">Flask calls Edge-TTS or gTTS (from requirements.txt). Converts chatbot text response to audio file (MP3/WAV). Supports English AND Urdu voices. Flask returns the audio file URL or streams it. React plays audio automatically in the browser. Bilingual support: if user selected Urdu, TTS uses Urdu voice model.</div>
+    </div>
+  </div>
+  <div class="arr-d">↓</div>
+
+  <!-- STEP 8 -->
+  <div class="step-row" style="background:#EAF3DE;border-color:#97C459;">
+    <span class="snum" style="background:#C0DD97;color:#27500A;margin-top:1px;">8</span>
+    <div>
+      <div class="step-title" style="color:#3B6D11;">Emotion Trend Chart Visual progress tracking (Recharts)</div>
+      <div class="step-desc" style="color:#3B6D11;">React renders emotion tracking charts using the Recharts library. Line/bar chart shows emotion scores over time. Data pulled from MongoDB chat history or predictions collection. User can see their mood improving or changing over multiple sessions.</div>
+    </div>
+  </div>
+  <div class="arr-d">↓</div>
+
+  <!-- STEP 9 -->
+  <div class="step-row" style="background:#FBEAF0;border-color:#ED93B1;">
+    <span class="snum" style="background:#F4C0D1;color:#72243E;margin-top:1px;">9</span>
+    <div>
+      <div class="step-title" style="color:#993556;">Feedback Thumbs up / down on chatbot response</div>
+      <div class="step-desc" style="color:#72243E;">User rates each chatbot message. React sends vote to Flask POST /feedback. Flask calls save_feedback() → stored in MongoDB feedback collection with reward (+1 or -1). This data can be used for future Reinforcement Learning from Human Feedback (RLHF) to improve the chatbot.</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SECTION 6: FLASK API ROUTES -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="sec-label">Flask API Endpoints (backend/app.py) What Each Route Does</div>
+<div class="block" style="border-color:#1D9E75;background:#E1F5EE12;">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:7px;">
+
+    <div class="api-box" style="background:#E1F5EE;border-color:#1D9E75;">
+      <div class="badge" style="background:#9FE1CB;color:#085041;">POST</div>
+      <div class="api-name" style="color:#085041;">/voice-intro</div>
+      <div class="api-desc" style="color:#0F6E56;">Receives voice biomarkers (pitch, tone, MFCC). Detects dominant emotion. Saves session + biomarkers to MongoDB. Returns emotion label + confidence.</div>
+    </div>
+
+    <div class="api-box" style="background:#FAECE7;border-color:#D85A30;">
+      <div class="badge" style="background:#F5C4B3;color:#712B13;">POST</div>
+      <div class="api-name" style="color:#993C1D;">/predict</div>
+      <div class="api-desc" style="color:#993C1D;">Receives questionnaire answers + voice emotion. Runs joblib ML pipeline. Returns condition + severity level. Saves prediction to MongoDB.</div>
+    </div>
+
+    <div class="api-box" style="background:#EEEDFE;border-color:#7F77DD;">
+      <div class="badge" style="background:#CECBF6;color:#3C3489;">POST</div>
+      <div class="api-name" style="color:#3C3489;">/chat</div>
+      <div class="api-desc" style="color:#534AB7;">Receives user message + session ID. Generates empathetic chatbot response with coping suggestions. Saves both messages to chat_history. Returns reply text.</div>
+    </div>
+
+    <div class="api-box" style="background:#FAEEDA;border-color:#BA7517;">
+      <div class="badge" style="background:#FAC775;color:#633806;">GET/POST</div>
+      <div class="api-name" style="color:#854F0B;">/tts</div>
+      <div class="api-desc" style="color:#854F0B;">Receives text + language. Calls Edge-TTS or gTTS. Returns audio file (MP3) for browser playback. Bilingual: English + Urdu voices.</div>
+    </div>
+
+    <div class="api-box" style="background:#FBEAF0;border-color:#ED93B1;">
+      <div class="badge" style="background:#F4C0D1;color:#72243E;">POST</div>
+      <div class="api-name" style="color:#993556;">/feedback</div>
+      <div class="api-desc" style="color:#72243E;">Receives thumbs up/down vote + message index. Saves to feedback collection with +1/-1 reward for future RLHF training.</div>
+    </div>
+
+    <div class="api-box" style="background:#EAF3DE;border-color:#97C459;">
+      <div class="badge" style="background:#C0DD97;color:#27500A;">GET</div>
+      <div class="api-name" style="color:#3B6D11;">/history</div>
+      <div class="api-desc" style="color:#3B6D11;">Returns emotion history from MongoDB for the current session. Used by React Recharts to render trend graphs.</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SECTION 7: TECH STACK DEEP DIVE -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="sec-label">Complete Tech Stack Every Library and Why It's There</div>
+<div class="block" style="border-color:#534AB7;background:#EEEDFE12;">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:7px;">
+
+    <div class="card" style="background:#EEEDFE;border-color:#7F77DD;">
+      <div class="badge" style="background:#CECBF6;color:#3C3489;">React.js</div>
+      <div class="fdesc" style="color:#534AB7;">The entire frontend UI. Component-based. VoiceCheckIn, TherapyCards, Chat, Charts are all React components.</div>
+    </div>
+
+    <div class="card" style="background:#EEEDFE;border-color:#AFA9EC;">
+      <div class="badge" style="background:#CECBF6;color:#3C3489;">Recharts</div>
+      <div class="fdesc" style="color:#534AB7;">React charting library. Draws the emotion trend graphs (line charts, bar charts) on the dashboard.</div>
+    </div>
+
+    <div class="card" style="background:#E1F5EE;border-color:#1D9E75;">
+      <div class="badge" style="background:#9FE1CB;color:#085041;">Flask</div>
+      <div class="fdesc" style="color:#085041;">Python web framework. Runs the backend server. Handles all API routes. Lightweight and perfect for ML APIs.</div>
+    </div>
+
+    <div class="card" style="background:#E1F5EE;border-color:#5DCAA5;">
+      <div class="badge" style="background:#9FE1CB;color:#085041;">flask-cors</div>
+      <div class="fdesc" style="color:#085041;">Allows React (port 3000) to talk to Flask (port 5000). Without CORS, browser blocks cross-origin requests.</div>
+    </div>
+
+    <div class="card" style="background:#FAECE7;border-color:#D85A30;">
+      <div class="badge" style="background:#F5C4B3;color:#712B13;">scikit-learn</div>
+      <div class="fdesc" style="color:#993C1D;">ML library. Trains Random Forest/SVM/Logistic Regression models for anxiety, stress, depression classification.</div>
+    </div>
+
+    <div class="card" style="background:#FAECE7;border-color:#F0997B;">
+      <div class="badge" style="background:#F5C4B3;color:#712B13;">joblib</div>
+      <div class="fdesc" style="color:#993C1D;">Saves and loads trained models to/from .joblib files. joblib.dump() after training, joblib.load() in Flask.</div>
+    </div>
+
+    <div class="card" style="background:#FAEEDA;border-color:#EF9F27;">
+      <div class="badge" style="background:#FAC775;color:#633806;">numpy</div>
+      <div class="fdesc" style="color:#854F0B;">Numerical arrays. Used for MFCC processing, feature vectors, and ML preprocessing math.</div>
+    </div>
+
+    <div class="card" style="background:#FAEEDA;border-color:#BA7517;">
+      <div class="badge" style="background:#FAC775;color:#633806;">pandas</div>
+      <div class="fdesc" style="color:#854F0B;">Data manipulation. Reads CSV datasets, cleans data, creates DataFrames for model training.</div>
+    </div>
+
+    <div class="card" style="background:#FAEEDA;border-color:#EF9F27;">
+      <div class="badge" style="background:#FAC775;color:#633806;">gTTS</div>
+      <div class="fdesc" style="color:#854F0B;">Google Text-to-Speech. Converts chatbot text to MP3 audio. Supports multiple languages including Urdu.</div>
+    </div>
+
+    <div class="card" style="background:#FAEEDA;border-color:#BA7517;">
+      <div class="badge" style="background:#FAC775;color:#633806;">Edge-TTS</div>
+      <div class="fdesc" style="color:#854F0B;">Microsoft Edge TTS API. Higher quality bilingual speech synthesis. Used for English + Urdu voice output.</div>
+    </div>
+
+    <div class="card" style="background:#E6F1FB;border-color:#378ADD;">
+      <div class="badge" style="background:#B5D4F4;color:#0C447C;">MongoDB</div>
+      <div class="fdesc" style="color:#185FA5;">NoSQL database (Atlas cloud). Stores sessions, biomarkers, chat history, predictions, feedback. Connected via pymongo.</div>
+    </div>
+
+    <div class="card" style="background:#E6F1FB;border-color:#85B7EB;">
+      <div class="badge" style="background:#B5D4F4;color:#0C447C;">pymongo</div>
+      <div class="fdesc" style="color:#185FA5;">Python driver for MongoDB. Used in db.py to connect and run insert/find operations on collections.</div>
+    </div>
+
+    <div class="card" style="background:#E6F1FB;border-color:#85B7EB;">
+      <div class="badge" style="background:#B5D4F4;color:#0C447C;">python-dotenv</div>
+      <div class="fdesc" style="color:#185FA5;">Loads secrets from .env file: MONGO_URI, API keys. Keeps sensitive data out of source code.</div>
+    </div>
+
+    <div class="card" style="background:#F1EFE8;border-color:#B4B2A9;">
+      <div class="badge" style="background:#D3D1C7;color:#2C2C2A;">Docker</div>
+      <div class="fdesc" style="color:#444441;">Packages the app into a container so it runs the same anywhere. Dockerfile at root defines the build.</div>
+    </div>
+
+    <div class="card" style="background:#F1EFE8;border-color:#888780;">
+      <div class="badge" style="background:#D3D1C7;color:#2C2C2A;">Jupyter</div>
+      <div class="fdesc" style="color:#444441;">Used in notebooks/ for exploratory data analysis and model experiments before writing production scripts.</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SECTION 8: ONE-LINE SUMMARY FLOW -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="sec-label">The Complete Flow in One Paragraph Perfect for Viva</div>
+<div style="border-radius:12px;padding:14px 16px;background:linear-gradient(135deg,#EEEDFE 0%,#E1F5EE 50%,#FAEEDA 100%);border:1px solid #AFA9EC;margin-bottom:14px;">
+  <div style="font-size:12px;line-height:1.8;color:var(--color-text-primary);">
+    The user opens the <strong style="color:#3C3489;">React frontend</strong> → records 30 seconds of voice → browser extracts <strong style="color:#993C1D;">pitch, tone, and MFCC</strong> features → sends to <strong style="color:#085041;">Flask /voice-intro</strong> → Flask detects dominant emotion and saves to <strong style="color:#0C447C;">MongoDB</strong> via db.py → user answers a <strong style="color:#854F0B;">mood questionnaire</strong> → Flask /predict loads the <strong style="color:#993C1D;">.joblib ML model</strong> from artifacts/ → fuses voice emotion + survey scores → predicts <strong style="color:#D85A30;">anxiety/stress/depression level</strong> → saves prediction to MongoDB → chatbot begins a <strong style="color:#3C3489;">therapeutic conversation</strong> with coping suggestions → Flask /tts converts each reply to <strong style="color:#BA7517;">audio (English or Urdu)</strong> → React plays it → user sees <strong style="color:#1D9E75;">emotion trend charts</strong> → votes 👍 or 👎 → feedback saved to MongoDB for future <strong style="color:#993556;">RLHF improvement</strong>.
+  </div>
+</div>
+
+<!-- TEAM -->
+<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:6px;">
+  <div style="padding:8px 14px;border-radius:10px;background:#EEEDFE;border:.5px solid #7F77DD;text-align:center;">
+    <div style="font-size:10px;color:#534AB7;font-weight:500;">Project Manager</div>
+    <div style="font-size:12px;color:#3C3489;font-weight:500;">Dr. Illyas</div>
+  </div>
+  <div style="padding:8px 14px;border-radius:10px;background:#E1F5EE;border:.5px solid #1D9E75;text-align:center;">
+    <div style="font-size:10px;color:#0F6E56;font-weight:500;">Supervisor</div>
+    <div style="font-size:12px;color:#085041;font-weight:500;">Dr. Saad Razaq</div>
+  </div>
+  <div style="padding:8px 14px;border-radius:10px;background:#FAECE7;border:.5px solid #D85A30;text-align:center;">
+    <div style="font-size:10px;color:#993C1D;font-weight:500;">Developer</div>
+    <div style="font-size:12px;color:#712B13;font-weight:500;">Esha Gulzar</div>
+  </div>
+  <div style="padding:8px 14px;border-radius:10px;background:#FAECE7;border:.5px solid #D85A30;text-align:center;">
+    <div style="font-size:10px;color:#993C1D;font-weight:500;">Developer</div>
+    <div style="font-size:12px;color:#712B13;font-weight:500;">Wajeeha Ijaz</div>
+  </div>
+  <div style="padding:8px 14px;border-radius:10px;background:#FAECE7;border:.5px solid #D85A30;text-align:center;">
+    <div style="font-size:10px;color:#993C1D;font-weight:500;">Developer</div>
+    <div style="font-size:12px;color:#712B13;font-weight:500;">Sheikh Zain</div>
+  </div>
+</div>
+
+<div style="text-align:center;font-size:10px;color:var(--color-text-secondary);margin-top:14px;padding-top:10px;border-top:.5px solid var(--color-border-tertiary);">
+  SentiCare Capstone University of Sargodha 2025-2026 · Python 41.8% · Jupyter 30.4% · JavaScript 17.5% · CSS 7.2% · HTML 3.1%
+</div>
+
+</div>
