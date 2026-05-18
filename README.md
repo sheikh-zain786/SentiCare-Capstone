@@ -79,8 +79,8 @@ SentiCare is a capstone project developed at the **University of Sargodha**. It 
 │   │   └── App.jsx
 │   └── package.json
 ├── artifacts/                # Trained model pipelines (.joblib)
-├── app.py                    # Flask API entry point
-├── Dockerfile                # Container configuration
+├── backend
+    ├── app.py                 # Flask API entry point
 └── README.md
 ```
 
