@@ -1,25 +1,9 @@
-# stt.py — FINAL CORRECTED (unchanged logic, added MarianMT install note)
-#
-# NOTE ON MARIAN MT:
-# ─────────────────────────────────────────────────────────────────────────────
-# If MarianMT is not installed, EmotionAnalyzer falls back to running Urdu
-# text directly through the English classifier (Strategy B in v5).
-# For best Urdu emotion accuracy, install the translation model:
-#
-#   pip install transformers sentencepiece sacremoses
-#   python -c "from transformers import pipeline; \
-#              pipeline('translation', model='Helsinki-NLP/opus-mt-ur-en')"
-#
-# This downloads ~300 MB once. After that, Urdu text is translated to English
-# before emotion classification, giving much better accuracy.
-#
-# Also: change MODEL_SIZE from "medium" to "small" if you want faster STT
-# at the cost of slightly lower Urdu accuracy.
-# ─────────────────────────────────────────────────────────────────────────────
-
-import logging
+# stt.py
+import logging      #Used for error logging.
 import whisper
 
+
+#Sometimes Whisper hallucinates text when audio is silent.Instead of returning empty text, Whisper may return
 _SILENCE_TOKENS = {
     "\u2026",
     "...",
@@ -32,7 +16,7 @@ _SILENCE_TOKENS = {
     "\u062e\u0627\u0645\u0648\u0634",   # خاموش
 }
 
-_MIN_CONFIDENCE = -0.7
+_MIN_CONFIDENCE = -0.7     #Higher = better confidence
 
 
 class STT:
@@ -41,7 +25,7 @@ class STT:
     @staticmethod
     def _get_model():
         if STT._model is None:
-            MODEL_SIZE = "small"
+            MODEL_SIZE = "small"           #Good balance for production
             print(f"[STT] Loading Whisper '{MODEL_SIZE}' model…", flush=True)
             STT._model = whisper.load_model(MODEL_SIZE)
             print("[STT] Whisper model ready.", flush=True)
@@ -54,10 +38,7 @@ class STT:
         self.stt_confidence: float = 0.0
 
     def convert_to_text(self, audio_path: str, language: str = "en") -> dict:
-        """
-        Transcribe audio_path with Whisper.
-        Always pass language explicitly — never None.
-        """
+
         import os
         if not audio_path or not os.path.exists(audio_path):
             return {
@@ -68,22 +49,23 @@ class STT:
             }
 
         model   = self._get_model()
-        options = {"fp16": False, "language": language}
+        options = {"fp16": False, "language": language}         #bcz fp16 works on GPUs
 
-        print(f"[STT] Transcribing with language='{language}'…", flush=True)
+        print(f"[STT] Transcribing with language='{language}'…", flush=True)         #text on exact time in mili sec, No waiting ,Buffering logic
 
         try:
-            result         = model.transcribe(audio_path, **options)
-            raw_transcript = (result.get("text") or "").strip()
+            result         = model.transcribe(audio_path, **options)          #returns dict with meta-data
+            raw_transcript = (result.get("text") or "").strip()               #remove spaces
 
             if raw_transcript in _SILENCE_TOKENS:
                 print(f"[STT] Silence placeholder '{raw_transcript}' → empty.", flush=True)
                 raw_transcript = ""
 
+            #Whisper splits audio into chunks.like  {"text": "Hello", "avg_logprob": -0.2},
             segments = result.get("segments", [])
             if segments:
-                probs = [s.get("avg_logprob", 0.0) for s in segments]
-                self.stt_confidence = sum(probs) / len(probs)
+                probs = [s.get("avg_logprob", 0.0) for s in segments]         #Collects all confidence scores
+                self.stt_confidence = sum(probs) / len(probs)                 #Computes mean confidence
             else:
                 self.stt_confidence = 0.0
 

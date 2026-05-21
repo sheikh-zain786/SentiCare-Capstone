@@ -1,14 +1,3 @@
-# backend/chatbot/questions/anxiety_questions.py
-# ─────────────────────────────────────────────────────────────────────────────
-# Each question has:
-#   col          → exact column name the ML pipeline expects
-#   question_en  → English question text
-#   question_ur  → Urdu question text
-#   input_type   → "number" | "radio" | "select" | "slider"
-#   options_en   → list of {label, value} for button UI  (EN)
-#   options_ur   → list of {label, value} for button UI  (UR)
-#   min / max    → for number / slider validation
-# ─────────────────────────────────────────────────────────────────────────────
 
 ANXIETY_FEATURE_QUESTIONS = [
     {

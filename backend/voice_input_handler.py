@@ -1,21 +1,7 @@
-# voice_input_handler.py — FIXED v8
-#
-# CHANGES vs v7:
-# ─────────────────────────────────────────────────────────────────────────────
-# DEPRESSION KEY IN voice_fusion_for_ml (fix):
-#   v7 only included anxiety/stress/sadness in voice_fusion_for_ml.
-#   emotion_analyzer v7 now returns a "depression" key in fusion, but
-#   voice_input_handler was not forwarding it.
-#
-#   Fix: voice_fusion_for_ml now includes fusion.get("depression", 0.0)
-#   so app.py receives the depression signal alongside the others.
-#
-# ALL OTHER CODE IDENTICAL TO v7.
-# ─────────────────────────────────────────────────────────────────────────────
 
 import os
 import io
-import subprocess
+import subprocess         #Used to run external programs like ffmpeg
 import tempfile
 import wave
 
@@ -29,27 +15,27 @@ from backend.nlu              import NLU
 
 class VoiceInputHandler:
 
-    TARGET_SR     = 16_000
-    MIN_WAV_BYTES = 3_200
+    TARGET_SR     = 16_000                   #Avg Sample Rate
+    MIN_WAV_BYTES = 3_200 
 
-    INT16_RMS_THRESHOLD   = 0.3
+    INT16_RMS_THRESHOLD   = 0.3               #RMS measures avg loudness
     FLOAT32_RMS_THRESHOLD = 0.000001
 
     def __init__(self):
         self.raw_audio   = None
         self.sample_rate = self.TARGET_SR
 
-    # ── Strategy 1: ffmpeg ───────────────────────────────────────────────────
+    # ── Strategy 1: ffmpeg ,best bcz browser recored audio in webm,opus,mp4,ogg and ffmeg converts everything safely
     @staticmethod
     def _decode_ffmpeg_pipe(input_path: str, output_wav_path: str,
                             target_sr: int = 16_000) -> tuple:
         cmd = [
-            "ffmpeg", "-y",
-            "-i", input_path,
+            "ffmpeg", "-y",              #over-write existing output file
+            "-i", input_path,            #input
             "-af", "volume=3.0",
-            "-ar", str(target_sr),
-            "-ac", "1",
-            "-f",  "wav",
+            "-ar", str(target_sr),       #Converts sample rate
+            "-ac", "1",                  #converts stereo to mono bcz AI Speech models prefer mono
+            "-f",  "wav",                #output
             output_wav_path,
         ]
         try:
@@ -66,7 +52,7 @@ class VoiceInputHandler:
             print("[ffmpeg] ffmpeg timed out.", flush=True)
             return False, 0.0
 
-        if result.returncode != 0:
+        if result.returncode != 0:                #chk if conversation failed
             err = result.stderr.decode("utf-8", errors="replace")
             print(f"[ffmpeg] returned {result.returncode}: {err[:300]}", flush=True)
             return False, 0.0
@@ -79,15 +65,16 @@ class VoiceInputHandler:
         if file_size < VoiceInputHandler.MIN_WAV_BYTES:
             print(f"[ffmpeg] output WAV too small: {file_size} bytes", flush=True)
             return False, 0.0
-
-        try:
+         
+         #Now Reads generated WAV.
+        try:          
             with wave.open(output_wav_path, "rb") as wf:
-                n_frames = wf.getnframes()
-                raw      = wf.readframes(n_frames)
-                fr       = wf.getframerate()
+                n_frames = wf.getnframes()                        #audio samples
+                raw      = wf.readframes(n_frames)                 #bytes
+                fr       = wf.getframerate()                      #sample rate
 
-            audio = np.frombuffer(raw, dtype=np.int16)
-            rms   = float(np.sqrt(np.mean(audio.astype(np.float32) ** 2)))
+            audio = np.frombuffer(raw, dtype=np.int16)               #Turns bytes → audio array
+            rms   = float(np.sqrt(np.mean(audio.astype(np.float32) ** 2)))          #measure loudness , RMS = sqrt(mean(signal²))
             dur   = n_frames / fr
 
             print(
@@ -103,12 +90,12 @@ class VoiceInputHandler:
             print(f"[ffmpeg] rms={rms:.4f} < threshold → SILENT ✗", flush=True)
             return False, rms
 
-        return True, rms
+        return True, rms         #success
 
-    # ── Strategy 2: PyAV float32 ─────────────────────────────────────────────
+    # ── Strategy 2: PyAV float32 bcz Float audio is more precise and better for ML than int16.
     @staticmethod
     def _decode_pyav_float32(input_path: str, output_wav_path: str,
-                             target_sr: int = 16_000) -> tuple:
+                             target_sr: int = 16_000) -> tuple: #(success, rms)
         try:
             import av
         except ImportError:
@@ -120,7 +107,7 @@ class VoiceInputHandler:
 
         try:
             container     = av.open(input_path)
-            audio_streams = [s for s in container.streams if s.type == "audio"]
+            audio_streams = [s for s in container.streams if s.type == "audio"]     #Filters only audio streams
 
             if not audio_streams:
                 container.close()
@@ -128,15 +115,15 @@ class VoiceInputHandler:
 
             stream  = audio_streams[0]
             orig_sr = stream.codec_context.sample_rate
-            resampler = av.AudioResampler(format="fltp", layout="mono", rate=orig_sr)
+            resampler = av.AudioResampler(format="fltp", layout="mono", rate=orig_sr)     #(float,1 channel,freq)
 
-            for frame in container.decode(stream):
-                for rf in resampler.resample(frame):
+            for frame in container.decode(stream):        #Reads audio frame-by-frame
+                for rf in resampler.resample(frame):      #Processes each frame.
                     arr = rf.to_ndarray()
-                    if arr.ndim == 2: arr = arr[0]
-                    all_frames.append(arr.astype(np.float32))
+                    if arr.ndim == 2: arr = arr[0]      #sometimes audio is (channels, samples) ,this takes first channel
+                    all_frames.append(arr.astype(np.float32))          #add chunks with float data-type to list
 
-            for rf in resampler.resample(None):
+            for rf in resampler.resample(None):          #FLUSH REMAINING AUDIO
                 arr = rf.to_ndarray()
                 if arr.ndim == 2: arr = arr[0]
                 all_frames.append(arr.astype(np.float32))
@@ -148,10 +135,10 @@ class VoiceInputHandler:
             traceback.print_exc()
             return False, 0.0
 
-        if not all_frames:
+        if not all_frames:                  #If decoding produced nothing then fails
             return False, 0.0
 
-        audio_f32 = np.concatenate(all_frames)
+        audio_f32 = np.concatenate(all_frames)                 #Combines all chunks into one audio signal
         rms_f32   = float(np.sqrt(np.mean(audio_f32 ** 2)))
 
         if rms_f32 < VoiceInputHandler.FLOAT32_RMS_THRESHOLD:
@@ -160,7 +147,7 @@ class VoiceInputHandler:
         if orig_sr and orig_sr != target_sr:
             try:
                 import librosa
-                audio_f32 = librosa.resample(audio_f32, orig_sr=orig_sr, target_sr=target_sr)
+                audio_f32 = librosa.resample(audio_f32, orig_sr=orig_sr, target_sr=target_sr)          #Changes frequency resolution
             except Exception as e:
                 print(f"[PyAV-f32] Resample failed ({e})", flush=True)
 
@@ -178,7 +165,7 @@ class VoiceInputHandler:
             print(f"[PyAV-f32] WAV write failed: {e}", flush=True)
             return False, 0.0
 
-    # ── Strategy 3: soundfile direct ─────────────────────────────────────────
+    # ── Strategy 3: soundfile direct 
     @staticmethod
     def _decode_soundfile_direct(input_path: str, output_wav_path: str,
                                  target_sr: int = 16_000) -> tuple:
@@ -190,7 +177,7 @@ class VoiceInputHandler:
             return False, 0.0
 
         if data.ndim > 1:
-            data = data.mean(axis=1)
+            data = data.mean(axis=1)         #if audio has multiple channels then convert to 1 channel
         rms = float(np.sqrt(np.mean(data ** 2)))
 
         if rms < VoiceInputHandler.FLOAT32_RMS_THRESHOLD:
@@ -216,10 +203,10 @@ class VoiceInputHandler:
             print(f"[soundfile-direct] WAV write failed: {e}", flush=True)
             return False, 0.0
 
-    # ── Strategy 4: WAV direct ───────────────────────────────────────────────
+    # ── Strategy 4: WAV direct
     @staticmethod
     def _try_read_as_wav(input_path: str, output_wav_path: str,
-                         target_sr: int = 16_000) -> tuple:
+                         target_sr: int = 16_000) -> tuple:            #(success, rms)
         try:
             with wave.open(input_path, "rb") as wf:
                 ch  = wf.getnchannels()
@@ -258,7 +245,7 @@ class VoiceInputHandler:
 
         return True, rms
 
-    # ── Strategy 5: pydub ────────────────────────────────────────────────────
+    # ── Strategy 5: pydub 
     def _decode_with_pydub(self, input_path: str, out_path: str) -> tuple:
         try:
             from pydub import AudioSegment
@@ -282,7 +269,7 @@ class VoiceInputHandler:
             print(f"[pydub] Failed: {exc}", flush=True)
             return False, 0.0
 
-    # ── Verify WAV ───────────────────────────────────────────────────────────
+    # ── Verify WAV 
     @staticmethod
     def _verify_wav(wav_path: str) -> tuple:
         try:
@@ -302,14 +289,14 @@ class VoiceInputHandler:
 
             rms      = float(np.sqrt(np.mean(audio.astype(np.float32) ** 2)))
             duration = nf / fr
-            has_audio = rms > VoiceInputHandler.INT16_RMS_THRESHOLD
+            has_audio = rms > VoiceInputHandler.INT16_RMS_THRESHOLD          #If RMS too low: consider silent.
             return has_audio, rms
 
         except Exception as e:
             print(f"[verify-wav] read failed: {e}", flush=True)
             return False, 0.0
 
-    # ── preprocess_audio ─────────────────────────────────────────────────────
+    # ── preprocess_audio 
     def preprocess_audio(self, input_path: str) -> str:
         tmp      = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
         out_path = tmp.name
@@ -340,23 +327,15 @@ class VoiceInputHandler:
         print("[VoiceInputHandler] ALL strategies failed. Returning last output path.", flush=True)
         return out_path
 
-    # ── run_pipeline ─────────────────────────────────────────────────────────
+    # ── run_pipeline
     def run_pipeline(self, audio_path: str, lang: str = "en") -> dict:
-        """
-        Full pipeline:
-          preprocess → STT → NLU → VoiceBiomarker → EmotionAnalyzer
 
-        Returns dict with keys:
-            transcript, dominant_emotion, fusion, biomarkers,
-            nlu (intent, sentiment, keywords),
-            voice_fusion_for_ml (used by app.py to adjust ML level)
-        """
         cleaned_path = None
         try:
-            # ── 1. Decode audio to clean WAV ──────────────────────────────
+            # ── 1. Decode audio to clean WAV 
             cleaned_path = self.preprocess_audio(audio_path)
 
-            # ── 2. Speech-to-text ─────────────────────────────────────────
+            # ── 2. Speech-to-text
             stt        = STT()
             stt_result = stt.convert_to_text(cleaned_path, language=lang)
 
@@ -369,7 +348,7 @@ class VoiceInputHandler:
                 flush=True,
             )
 
-            # ── 3. NLU ────────────────────────────────────────────────────
+            # ── 3. NLU 
             nlu        = NLU()
             nlu_result = nlu.analyze(transcript, language=lang)
 
@@ -380,7 +359,7 @@ class VoiceInputHandler:
                 flush=True,
             )
 
-            # ── 4. Voice biomarker extraction ─────────────────────────────
+            # ── 4. Voice biomarker extraction
             biomarker  = VoiceBiomarker()
             biomarker.extract_mfcc(cleaned_path)
             bio_result = biomarker.analyze_voice_emotion()
@@ -392,7 +371,7 @@ class VoiceInputHandler:
                 flush=True,
             )
 
-            # ── 5. Silence check ──────────────────────────────────────────
+            # ── 5. Silence check
             is_truly_silent = (
                 bio_result["pitch"] == 0.0
                 and bio_result["tone"] < VoiceBiomarker.SILENCE_TONE_THRESHOLD
@@ -425,7 +404,7 @@ class VoiceInputHandler:
                     },
                 }
 
-            # ── 6. Emotion classification ─────────────────────────────────
+            # ── 6. Emotion classification 
             analyzer   = EmotionAnalyzer()
             emo_result = analyzer.classify_emotion(
                 transcript,
@@ -436,12 +415,11 @@ class VoiceInputHandler:
 
             fusion = emo_result["fusion"]
 
-            # ── FIXED: include depression in voice_fusion_for_ml ──────────
             voice_fusion_for_ml = {
                 "anxiety":    fusion.get("anxiety",    0.0),
                 "stress":     fusion.get("stress",     0.0),
                 "sadness":    fusion.get("sadness",    0.0),
-                "depression": fusion.get("depression", 0.0),   # ← NEW
+                "depression": fusion.get("depression", 0.0),  
             }
 
             return {

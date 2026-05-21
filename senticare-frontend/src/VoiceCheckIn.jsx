@@ -1,15 +1,4 @@
-// VoiceCheckIn.jsx — FIXED v10
-//
-// CHANGES vs v9:
-// ─────────────────────────────────────────────────────────────────────────────
-// FIX — intentLabels map now includes "positive_engagement" (new NLU intent).
-//   Previously the map only had distress / denial / help_seeking / neutral.
-//   When NLU returned "positive_engagement" the UI fell through to the raw
-//   key string and displayed it unstyled. Now it shows "Positive" (EN) or
-//   "خوشگوار" (UR) correctly.
-//
-// ALL OTHER CODE IDENTICAL TO v9.
-// ─────────────────────────────────────────────────────────────────────────────
+// VoiceCheckIn.jsx 
 
 import React, { useState, useRef, useCallback } from "react";
 import { sendVoiceIntro } from "./voiceApi";

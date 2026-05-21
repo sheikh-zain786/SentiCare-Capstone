@@ -1,4 +1,6 @@
-import axios from "axios";
+//API service layer between your React frontend and backend server.
+
+import axios from "axios";         //Axios helps send HTTP requests
 
 const API = axios.create({
   baseURL: "http://localhost:5000"

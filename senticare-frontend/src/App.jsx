@@ -1,24 +1,4 @@
-// App.jsx — v10
-//
-// CHANGES vs v9:
-// ─────────────────────────────────────────────────────────────────────────────
-// FIX: "Thank you. Based on your responses..." message was SILENT.
-//
-// ROOT CAUSE:
-//   In the `thankyou` stage, `tyIdx` is assigned INSIDE the setMessages
-//   updater callback, but speakMessage(data.message, tyIdx) was called
-//   IMMEDIATELY after in the same synchronous tick — before React flushed
-//   the state update. So tyIdx was still `undefined` when speakMessage ran,
-//   causing it to silently fail or speak the wrong message.
-//
-//   Same issue existed in `pre_screening` for the greeting message.
-//
-// FIX:
-//   Wrapped both speakMessage calls in setTimeout(..., 50) so React has
-//   time to flush the state update before TTS tries to use the index.
-//
-// ALL OTHER LOGIC IDENTICAL TO v9.
-// ─────────────────────────────────────────────────────────────────────────────
+// App.jsx 
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
@@ -32,9 +12,8 @@ const API_URL = "http://localhost:5000/chat";
 const TTS_URL = "http://localhost:5000/tts";
 const MAX_INPUT_CHARS = 500;
 
-// ════════════════════════════════════════════════════════════════
 //  STORAGE HELPERS
-// ════════════════════════════════════════════════════════════════
+
 const local = {
   get: (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
   set: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
@@ -47,7 +26,7 @@ const session = {
   del: (k) => sessionStorage.removeItem(k),
 };
 
-// ── Therapy detection ───────────────────────────────────────────
+// ── Therapy detection 
 const THERAPY_TRIGGERS = [
   "steps:", "exercise:", "technique:", "try this:", "practice:",
   "breathing", "grounding", "progressive muscle", "cognitive", "reframe",
@@ -59,37 +38,38 @@ const isTherapyMessage = (text) =>
   THERAPY_TRIGGERS.some(t => text.toLowerCase().includes(t)) && text.length > 120;
 
 const parseTherapyCard = (text) => {
-  const lines = text.split(/\n+/).filter(Boolean);
-  const title = lines[0]?.length < 80 ? lines[0].replace(/[*_#🔍]/g, "").trim() : "Therapy Exercise";
-  const steps = lines.slice(1).filter(l => l.trim().length > 0);
+  const lines = text.split(/\n+/).filter(Boolean);       //split and remove extra spaces
+  const title = lines[0]?.length < 80 ? lines[0].replace(/[*_#🔍]/g, "").trim() : "Therapy Exercise";      //1st line becomes title
+  const steps = lines.slice(1).filter(l => l.trim().length > 0);          //Remaining are Instructions
   return { title, steps };
 };
 
-// ── Input validation ────────────────────────────────────────────
+// ── Input validation
 const validateInput = (text, lang) => {
-  const trimmed = text.trim();
+  const trimmed = text.trim();                //remove spaces
   if (!trimmed) return lang === "ur" ? "پیغام خالی نہیں ہو سکتا۔" : "Message cannot be empty.";
   if (trimmed.length > MAX_INPUT_CHARS)
     return lang === "ur"
       ? `پیغام ${MAX_INPUT_CHARS} حروف سے زیادہ نہیں ہو سکتا۔`
       : `Message must be under ${MAX_INPUT_CHARS} characters.`;
   if (lang === "ur") {
-    const urduRange = /[\u0600-\u06FF]/;
-    const numericOnly = /^[\d\s]+$/;
+    const urduRange = /[\u0600-\u06FF]/;        //chk if txt contain urdu
+    const numericOnly = /^[\d\s]+$/;            //chk nmbr
     if (!urduRange.test(trimmed) && !numericOnly.test(trimmed)) {
       return "براہ کرم اردو میں لکھیں یا نمبر درج کریں۔";
     }
   }
-  return "";
+  return "";          //if all ok then return empty string(no error,msg can proceed to chabot)
 };
 
-// ── Audio engine ─────────────────────────────────────────────────
-const sharedAudio = new Audio();
-sharedAudio.preload = "none";
+// ── Audio engine 
+const sharedAudio = new Audio();               //ONE reusable audio player for the whole chatbot
+sharedAudio.preload = "none";                  //browser should NOT download audio before needed.This saves:bandwidth and memory 
+//it can be auto to reload early for faster playback but uses more data
 
 const stopAudio = () => {
   sharedAudio.pause();
-  sharedAudio.src = "";
+  sharedAudio.src = "";             //removes current audio source ,That prevents overlapping & old  audio replay
   sharedAudio.oncanplay = null;
   sharedAudio.onended = null;
   sharedAudio.onerror = null;
@@ -98,24 +78,22 @@ const stopAudio = () => {
 const playTTS = (text, rate, lang, onStart, onEnd, onError) => {
   stopAudio();
   const clean = text
-    .replace(/[\u{1F300}-\u{1FFFF}]/gu, "")
-    .replace(/[🔍💚📋✅🌱🟠🔵🟢]/g, "")
-    .replace(/\*+/g, " ")
-    .replace(/\n+/g, ". ")
-    .trim();
-  if (!clean) { onError(); return; }
-  const params = new URLSearchParams({ text: clean, lang });
-  sharedAudio.src = `${TTS_URL}?${params.toString()}`;
-  sharedAudio.playbackRate = Math.min(Math.max(rate, 0.5), 2);
+    .replace(/[\u{1F300}-\u{1FFFF}]/gu, "")          //remove emojis
+    .replace(/[🔍💚📋✅🌱🟠🔵🟢]/g, "")          //removes specific symbols
+    .replace(/\*+/g, " ")                            //**Hello** -> Hello
+    .replace(/\n+/g, ". ")                          // line breaks -> pauses ,TTS pauses naturally at periods.
+    .trim();                                        //removes extra spaces
+  if (!clean) { onError(); return; }           //after clean if msg become empty
+  const params = new URLSearchParams({ text: clean, lang });           //Create URL parameters safely.
+  sharedAudio.src = `${TTS_URL}?${params.toString()}`;                 //Set audio URL.
+  sharedAudio.playbackRate = Math.min(Math.max(rate, 0.5), 2);         //Control speaking speed.
   sharedAudio.oncanplay = () => onStart();
   sharedAudio.onended = onEnd;
-  sharedAudio.onerror = () => { console.error("TTS error"); onError(); };
+  sharedAudio.onerror = () => { console.error("TTS error"); onError(); };       //Handle TTS failures safely
   sharedAudio.play().catch(err => { console.error("TTS play() error:", err); onError(); });
 };
 
-// ════════════════════════════════════════════════════════════════
 //  UI STRINGS — bilingual
-// ════════════════════════════════════════════════════════════════
 const UI = {
   en: {
     appName:        "SentiCare",
@@ -346,20 +324,19 @@ const DAILY_TIPS_UR = [
 const levelToNum = (level) =>
   level === "high" ? 3 : level === "medium" ? 2 : 1;
 
-// ════════════════════════════════════════════════════════════════
 //  TOAST SYSTEM
-// ════════════════════════════════════════════════════════════════
+// popup notification messages like session saved
 function ToastContainer({ toasts }) {
   return (
-    <div className="toast-container">
-      {toasts.map(t => <div key={t.id} className="toast">{t.msg}</div>)}
+    <div className="toast-container">                 
+      {toasts.map(t => <div key={t.id} className="toast">{t.msg}</div>)}   
     </div>
   );
 }
 
-function useToast() {
-  const [toasts, setToasts] = useState([]);
-  const show = useCallback((msg) => {
+function useToast() { 
+  const [toasts, setToasts] = useState([]);                          //Store all active toast messages.
+  const show = useCallback((msg) => {                                //Function to SHOW a new toast.
     const id = Date.now();
     setToasts(prev => [...prev, { id, msg }]);
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 2500);
@@ -367,9 +344,7 @@ function useToast() {
   return { toasts, show };
 }
 
-// ════════════════════════════════════════════════════════════════
 //  AUTH SCREEN
-// ════════════════════════════════════════════════════════════════
 function AuthScreen({ onLogin, lang }) {
   const t = UI[lang];
   const [mode, setMode] = useState("login");
@@ -479,9 +454,7 @@ function AuthScreen({ onLogin, lang }) {
   );
 }
 
-// ════════════════════════════════════════════════════════════════
 //  CONFIRM DIALOG
-// ════════════════════════════════════════════════════════════════
 function ConfirmDialog({ icon, title, text, onConfirm, onCancel, lang }) {
   const t = UI[lang];
   return (
@@ -499,9 +472,7 @@ function ConfirmDialog({ icon, title, text, onConfirm, onCancel, lang }) {
   );
 }
 
-// ════════════════════════════════════════════════════════════════
 //  SIDEBAR CONTENT
-// ════════════════════════════════════════════════════════════════
 function SidebarContent({ user, page, setPage, sessions, lang, voiceOn, setVoiceOn, speechRate, setSpeechRate, onLogout, todayTip, onClose }) {
   const t = UI[lang];
   const initials = user.name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
@@ -561,9 +532,7 @@ function SidebarContent({ user, page, setPage, sessions, lang, voiceOn, setVoice
   );
 }
 
-// ════════════════════════════════════════════════════════════════
 //  EMOTION TREND CHART
-// ════════════════════════════════════════════════════════════════
 function EmotionTrendChart({ sessions, lang }) {
   const t = UI[lang];
   const chartData = [...sessions].reverse().map(s => ({
@@ -628,9 +597,7 @@ function EmotionTrendChart({ sessions, lang }) {
   );
 }
 
-// ════════════════════════════════════════════════════════════════
 //  ROOT
-// ════════════════════════════════════════════════════════════════
 export default function App() {
   const [currentUser, setCurrentUser] = useState(() => session.get("sc_current_user") || null);
   const [lang, setLang] = useState(local.get("sc_lang") || "en");
@@ -654,9 +621,7 @@ export default function App() {
   return <MainApp user={currentUser} onLogout={handleLogout} lang={lang} toggleLang={toggleLang} />;
 }
 
-// ════════════════════════════════════════════════════════════════
 //  MAIN APP
-// ════════════════════════════════════════════════════════════════
 function MainApp({ user, onLogout, lang, toggleLang }) {
   const t = UI[lang];
   const isRTL = lang === "ur";
@@ -779,7 +744,7 @@ function MainApp({ user, onLogout, lang, toggleLang }) {
   const openPopup = (text) => setPopup({ text, card: parseTherapyCard(text) });
   const closePopup = () => { stopAudio(); setPopupSpeaking(false); setPopupTtsLoading(false); setPopup(null); };
 
-  // ── Core send ─────────────────────────────────────────────────
+  // ── Core send 
   const sendMessage = async (text) => {
     setIsTyping(true);
     setCurrentOptions(null);
@@ -800,7 +765,7 @@ function MainApp({ user, onLogout, lang, toggleLang }) {
       const data = await res.json();
       const firstOptions = data.options ?? null;
 
-      // ── THANKYOU stage ────────────────────────────────────────
+      // ── THANKYOU stage 
       if (data.stage === "thankyou") {
         // Step 1: show thankyou message immediately
         const tyText = data.message;
@@ -975,7 +940,7 @@ function MainApp({ user, onLogout, lang, toggleLang }) {
         return;
       }
 
-      // ── Normal question/answer flow ───────────────────────────
+      // ── Normal question/answer flow 
       let newMsgIdx;
       setMessages(prev => {
         newMsgIdx = prev.length;

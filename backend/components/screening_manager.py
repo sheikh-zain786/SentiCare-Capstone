@@ -18,10 +18,6 @@ class ScreeningManager:
             "mental_health_screening.json"
         )
 
-        # Debug print (optional - remove later)
-        # print("Loading file from:", file_path)
-
-        # Check if file exists (professional safety check)
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"Screening file not found at: {file_path}")
 

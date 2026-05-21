@@ -1,25 +1,4 @@
-# backend/chatbot/router.py
-#
-# FIXES:
-# ─────────────────────────────────────────────────────────────────────────────
-# FIX 1 — _MIN_SCORE lowered to 2 (from 3).
-#   With only 2 stress questions (max score=6) a threshold of 3 meant stress
-#   needed 50% hit rate. 2 is already a "several days" answer — clinically
-#   meaningful. Raising it too high causes "neutral" for genuinely symptomatic
-#   users.
-#
-# FIX 2 — Normalised scoring to handle unequal question counts.
-#   anxiety=3 qs (max 9), depression=3 qs (max 9), stress=2 qs (max 6).
-#   Without normalisation stress is always disadvantaged. We compare
-#   average-per-question instead of raw sum.
-#   avg = raw_sum / question_count
-#
-# FIX 3 — Priority: anxiety > stress > depression.
-#   Depression wins ties too often because its symptoms overlap with anxiety
-#   and fatigue. Anxiety first is the safer clinical entry point.
-# ─────────────────────────────────────────────────────────────────────────────
 
-# Question counts per domain (must match _SCREENING_DOMAIN_MAP in engine)
 _QUESTION_COUNTS = {
     "anxiety":    3,   # feeling_nervous, uncontrollable_worry, restlessness
     "depression": 3,   # feeling_down, loss_of_interest, fatigue
@@ -35,17 +14,6 @@ _PRIORITY = ["anxiety", "stress", "depression"]
 
 
 def route_condition(screening_scores: dict) -> str:
-    """
-    Routes to the condition with the highest normalised screening score.
-
-    Rules:
-      - Raw score divided by question count → average score per question.
-      - Averages below _MIN_AVG are ignored.
-      - If no condition meets the threshold → "neutral".
-      - Ties broken by: anxiety > stress > depression.
-
-    Returns one of: "anxiety" | "stress" | "depression" | "neutral"
-    """
     averages = {}
     for condition in ("anxiety", "stress", "depression"):
         raw = screening_scores.get(condition, 0)

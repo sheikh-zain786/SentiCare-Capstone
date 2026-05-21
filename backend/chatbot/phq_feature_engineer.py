@@ -1,18 +1,3 @@
-# backend/chatbot/phq_feature_engineer.py
-#
-# FIX: Cast PHQ columns to int before any numeric comparison.
-#
-# ROOT CAUSE:
-#   Feature answers arrive from the chat form as strings (e.g. "3", "0").
-#   The original code did:
-#       X["severe_symptom_count"] = (X[self.phq_cols] >= 2).sum(axis=1)
-#   pandas string columns cannot be compared with an integer using >=
-#   → TypeError: '>=' not supported between instances of 'str' and 'int'
-#
-# FIX:
-#   Cast all phq_cols to numeric (int) with pd.to_numeric(..., errors='coerce')
-#   immediately before any comparison or arithmetic on those columns.
-#   NaN values (unparseable inputs) are filled with 0 as a safe default.
 
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -38,14 +23,11 @@ class PHQFeatureEngineer(BaseEstimator, TransformerMixin):
     def transform(self, X):
         X = X.copy()
 
-        # ── FIX: cast PHQ columns to numeric before any comparison ──────────
-        # Values arrive as strings ("0","1","2","3") from the chat form.
-        # pd.to_numeric coerces anything unparseable to NaN; fillna(0) is safe.
         present_cols = [c for c in self.phq_cols if c in X.columns]
         for col in present_cols:
             X[col] = pd.to_numeric(X[col], errors="coerce").fillna(0).astype(int)
 
-        # ── Derived features ─────────────────────────────────────────────────
+        # ── Derived features 
         if present_cols:
             X["phq_total"]           = X[present_cols].sum(axis=1)
             X["severe_symptom_count"] = (X[present_cols] >= 2).sum(axis=1)

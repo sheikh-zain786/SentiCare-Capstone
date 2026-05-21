@@ -1,16 +1,3 @@
-# backend/chatbot/questions/stress_questions.py
-# ─────────────────────────────────────────────────────────────────────────────
-# Each question has:
-#   col          → exact column name the ML pipeline expects
-#   question_en  → English question text
-#   question_ur  → Urdu question text
-#   input_type   → "number" | "radio" | "select" | "slider" | "scale_5"
-#   options_en   → list of {label, value} for button UI  (EN)
-#   options_ur   → list of {label, value} for button UI  (UR)
-#   min / max    → for number / slider validation
-#
-# NOTE: "scale_5" type = 1-5 frequency scale, rendered as buttons automatically
-# ─────────────────────────────────────────────────────────────────────────────
 
 STRESS_FEATURE_QUESTIONS = [
     {

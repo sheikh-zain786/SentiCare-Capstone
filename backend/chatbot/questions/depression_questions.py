@@ -1,27 +1,3 @@
-# backend/chatbot/questions/depression_questions.py
-#
-# FIXES:
-# ─────────────────────────────────────────────────────────────────────────────
-# FIX 1 — "age" question: was input_type="select" with options as plain strings
-#   ["Below 18", "18-22", ...]. Frontend expects {label, value} objects.
-#   Now uses input_type="number" so AgeInput component handles it correctly.
-#   Backend validate_feature_input() already handles "number" type.
-#
-# FIX 2 — PHQ-9 slider questions: input_type="slider", options_en=None.
-#   Frontend showed no buttons because _resolve_feature() returned null options
-#   for slider type, and the slider UI doesn't exist in the frontend.
-#   FIXED: changed all slider questions to input_type="radio" with 4-option
-#   frequency scale {label, value} buttons (0=Not at all → 3=Nearly every day).
-#   These match the PHQ-9 scoring rubric exactly.
-#
-# FIX 3 — "gender", "academic_year", "cgpa" options were plain strings.
-#   Now all options are proper {label, value} objects.
-#
-# FIX 4 — "scholarship" options were plain strings ["Yes", "No"].
-#   Now proper {label, value} objects.
-# ─────────────────────────────────────────────────────────────────────────────
-
-# PHQ-9 frequency options — reused across all 9 clinical questions
 _PHQ_OPTS_EN = [
     {"label": "0 — Not at all",             "value": "0"},
     {"label": "1 — Several days",            "value": "1"},
@@ -40,9 +16,6 @@ DEPRESSION_FEATURE_QUESTIONS = [
     # ── DEMOGRAPHIC FEATURES ──────────────────────────────────────────────────
 
     {
-        # FIX 1: was input_type="select" with plain string options.
-        # Now input_type="number" so AgeInput component renders a number field.
-        # app.py validate_feature_input() handles "number" correctly.
         "col":        "age",
         "input_type": "number",
         "min": 10,

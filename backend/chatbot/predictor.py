@@ -1,36 +1,3 @@
-# backend/chatbot/predictor.py
-#
-# FIXES — all three conditions:
-# ─────────────────────────────────────────────────────────────────────────────
-# ANXIETY:
-#   anxiety_model.predict() was called with short-key dict (e.g. "phq_score").
-#   Added _ANX_RENAME to map chat-form short keys → training column names.
-#   Also added _ANX_DEFAULTS so missing columns are safely filled.
-#
-#   NEW FIX: anxiety model returns a regression float (e.g. 3.71), not 0/1/2.
-#   Added _normalise_anxiety_raw() to map the float → 0 (low) / 1 (medium) / 2 (high).
-#   Both predict paths (renamed keys + original keys fallback) now use this
-#   normaliser instead of bare int(raw), so map_prediction_to_level() in
-#   conversation_engine always receives a valid 0/1/2 and never hits the
-#   "Unrecognised prediction" warning.
-#
-# STRESS:
-#   Stress has no ML model — level is derived from averaging scale_cols.
-#   BUT scale_cols used full question strings as dict keys, while features{}
-#   arrives with short keys from STRESS_FEATURE_QUESTIONS["col"].
-#   The average was ALWAYS empty → avg defaulted to 3.0 → always "medium".
-#   Fixed by adding _STRESS_SHORT_TO_FULL rename so the average is computed
-#   from the actual answers the user gave.
-#   The stress predict() now returns 0/1/2 (not a level string) so
-#   map_prediction_to_level() in conversation_engine works correctly.
-#
-# DEPRESSION:
-#   All previous fixes preserved:
-#   • Full rename of demo + PHQ columns
-#   • any_symptom_count pre-computed
-#   • Auto-built encoder int map at startup
-#   • medium→1 (not 2) in fallback map
-# ─────────────────────────────────────────────────────────────────────────────
 
 import joblib
 import pandas as pd
@@ -43,7 +10,7 @@ __main__.PHQFeatureEngineer = PHQFeatureEngineer
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 
-# ── Load models ───────────────────────────────────────────────────────────────
+# ── Load models 
 stress_model = joblib.load(
     BASE_DIR / "artifacts/stress_classification/stress_bundle.joblib"
 )
@@ -63,12 +30,10 @@ print(
 )
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 #  ANXIETY — column rename map
 #  Maps chat-form short keys (from ANXIETY_FEATURE_QUESTIONS["col"])
 #  → full column names the anxiety_pipeline was trained on.
 #  Update these if your training data used different column names.
-# ══════════════════════════════════════════════════════════════════════════════
 
 _ANX_RENAME: dict[str, str] = {
     # Demographic
@@ -106,7 +71,6 @@ _ANX_DEFAULTS: dict[str, int] = {
 }
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 #  ANXIETY — raw prediction normaliser
 #  The anxiety model returns a regression float (e.g. 3.71), not a 0/1/2 class.
 #  This function maps it to 0/1/2 so map_prediction_to_level() works correctly.
@@ -115,7 +79,6 @@ _ANX_DEFAULTS: dict[str, int] = {
 #    raw ≤ 2.0  →  0  (low)
 #    raw ≤ 3.5  →  1  (medium)
 #    raw >  3.5  →  2  (high)
-# ══════════════════════════════════════════════════════════════════════════════
 
 def _normalise_anxiety_raw(raw) -> int:
     val = float(raw)
@@ -131,12 +94,10 @@ def _normalise_anxiety_raw(raw) -> int:
     )
     return level_int
 
-# ══════════════════════════════════════════════════════════════════════════════
 #  STRESS — short key → full question string rename map
 #  Maps chat-form short keys (from STRESS_FEATURE_QUESTIONS["col"])
 #  → the exact strings used as scale_cols in app.py's stress averaging logic
 #  AND as column names in the stress_bundle pipeline.
-# ══════════════════════════════════════════════════════════════════════════════
 
 _STRESS_SHORT_TO_FULL: dict[str, str] = {
     "stress_in_life":         "Have you recently experienced stress in your life?",
@@ -182,9 +143,7 @@ _STRESS_DEFAULTS: dict[str, int] = {
 }
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 #  DEPRESSION — column rename maps
-# ══════════════════════════════════════════════════════════════════════════════
 
 _DEP_DEMO_RENAME: dict[str, str] = {
     "age":           "1. Age",
@@ -209,9 +168,7 @@ _DEP_PHQ_RENAME: dict[str, str] = {
 _PHQ_COLS = list(_DEP_PHQ_RENAME.values())
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 #  DEPRESSION — label normalisation
-# ══════════════════════════════════════════════════════════════════════════════
 
 def _build_encoder_int_map(classes: list) -> dict[str, int]:
     LOW_KW    = {"low", "minimal", "none", "no depression", "no_depression",
@@ -292,15 +249,13 @@ def _normalise_depression_label(raw_label) -> int:
     return 1
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 #  PUBLIC predict()
-# ══════════════════════════════════════════════════════════════════════════════
 
 def predict(condition: str, feature_answers: dict):
 
     feature_answers = dict(feature_answers)
 
-    # ── ANXIETY ───────────────────────────────────────────────────────────────
+    # ── ANXIETY 
     if condition == "anxiety":
         # Apply defaults first, then rename short keys → training column names
         for col, val in _ANX_DEFAULTS.items():
@@ -329,7 +284,7 @@ def predict(condition: str, feature_answers: dict):
             print(f"[predictor] anxiety raw (orig keys)={raw!r}", flush=True)
             return _normalise_anxiety_raw(raw)          # ← FIXED: was int(raw)
 
-    # ── STRESS ────────────────────────────────────────────────────────────────
+    # ── STRESS 
     if condition == "stress":
         # Step 1: rename short keys → full strings for both ML and scale average
         renamed = {_STRESS_SHORT_TO_FULL.get(k, k): v for k, v in feature_answers.items()}
@@ -383,7 +338,7 @@ def predict(condition: str, feature_answers: dict):
         )
         return level_int
 
-    # ── DEPRESSION ────────────────────────────────────────────────────────────
+    # ── DEPRESSION 
     if condition == "depression":
         # Step 1: rename all columns
         full_rename = {**_DEP_DEMO_RENAME, **_DEP_PHQ_RENAME}

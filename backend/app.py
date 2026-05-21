@@ -1,21 +1,7 @@
-# app.py — v13
-#
-# CHANGES vs v12:
-# ─────────────────────────────────────────────────────────────────────────────
-# ADDED: MongoDB Atlas integration via db.py
-#
-# What gets saved:
-#   • sessions        — after /voice-intro completes
-#   • biomarkers      — pitch, tone, mfcc, emotion scores
-#   • chat_history    — every user + assistant message
-#   • predictions     — ML result, fusion mode, CBT level
-#   • feedback        — thumbs up / thumbs down signals
-#
-# ALL OTHER LOGIC IDENTICAL TO v12.
-# ─────────────────────────────────────────────────────────────────────────────
+# app.py
 
 from flask import Flask, request, jsonify, Response, stream_with_context
-from flask_cors import CORS
+from flask_cors import CORS    #Allows frontend (React) to talk to backend.
 
 from backend.conversation_engine import ConversationEngine
 from backend.chatbot.emotion_fusion_combiner import EmotionFusionCombiner
@@ -25,7 +11,7 @@ from backend.chatbot.questions.depression_questions import DEPRESSION_FEATURE_QU
 import edge_tts
 import asyncio
 import io
-import re
+import re              #Regex library for removing emojis and cleaning text
 import hashlib
 import os
 import tempfile
@@ -35,7 +21,7 @@ from backend.voice_input_handler import VoiceInputHandler
 from backend.stt import STT
 
 
-# ── MongoDB helpers ───────────────────────────────────────────────────────────
+# ── MongoDB helpers 
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from db import (
@@ -52,14 +38,15 @@ app = Flask(__name__)
 CORS(app)
 
 engine    = ConversationEngine()
-sessions: dict = {}
+sessions: dict = {}          #Stores active user sessions in RAM
 
 VOICE_EN = "en-US-AriaNeural"
 VOICE_UR = "ur-PK-UzmaNeural"
-_tts_cache: dict = {}
+_tts_cache: dict = {}        #Stores already-generated speech for faster response ,without this regenerates audio every time.
 
 SUPPORTED_LANGUAGES = {"en", "ur"}
 
+#Maps audio type to extension.
 _MIME_TO_EXT = {
     "ogg":  ".ogg",
     "mp4":  ".mp4",
@@ -68,7 +55,7 @@ _MIME_TO_EXT = {
     "webm": ".webm",
 }
 
-
+#Determines uploaded audio extension.
 def _audio_suffix(audio_file) -> str:
     filename = audio_file.filename or ""
     ext = os.path.splitext(filename)[1]
@@ -78,14 +65,13 @@ def _audio_suffix(audio_file) -> str:
     for fragment, suffix in _MIME_TO_EXT.items():
         if fragment in ct:
             return suffix
-    return ".webm"
+    return ".webm"         #default
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 #  VOICE INTRO ENDPOINT
-# ══════════════════════════════════════════════════════════════════════════════
 
-@app.route("/voice-intro", methods=["POST"])
+@app.route("/voice-intro", methods=["POST"])        #frontend sends voice recording here.
+
 def voice_intro():
     if "audio" not in request.files:
         return jsonify({"error": "No audio file received"}), 400
@@ -95,7 +81,7 @@ def voice_intro():
     raw_lang   = request.form.get("lang", "en").strip().lower()
     lang       = raw_lang if raw_lang in SUPPORTED_LANGUAGES else "en"
     suffix     = _audio_suffix(audio_file)
-
+    #create temp file bcz STT/emotion models need file path.
     tmp        = tempfile.NamedTemporaryFile(suffix=suffix, delete=False)
     audio_path = tmp.name
     tmp.close()
@@ -139,7 +125,7 @@ def voice_intro():
         sess["voice_fusion"]   = result.get("voice_fusion_for_ml", {})
         sess["voice_dominant"] = result.get("dominant_emotion", "neutral")
 
-        # ── MongoDB: save session + biomarkers ────────────────────────────
+        # ── MongoDB: save session + biomarkers
         try:
             save_session(
                 session_id,
@@ -155,7 +141,6 @@ def voice_intro():
             print(f"[voice-intro] ✅ MongoDB saved session + biomarkers", flush=True)
         except Exception as db_exc:
             print(f"[voice-intro] ⚠️  MongoDB save failed: {db_exc}", flush=True)
-        # ─────────────────────────────────────────────────────────────────
 
         print(
             f"[voice-intro] Stored → "
@@ -164,36 +149,37 @@ def voice_intro():
             flush=True,
         )
 
-        return jsonify(result), 200
+        return jsonify(result), 200    #JSON with ok
 
     except Exception as exc:
         app.logger.error(f"[voice-intro] ERROR: {exc}")
         _tb.print_exc()
         return jsonify({"error": str(exc)}), 500
-
+    
+    #now deletes a temporary audio file
     finally:
         if os.path.exists(audio_path):
             os.remove(audio_path)
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 #  TTS HELPERS
-# ══════════════════════════════════════════════════════════════════════════════
 
-def _synthesize(text: str, voice: str) -> bytes:
+#Generates speech using Edge TTS
+def _synthesize(text: str, voice: str) -> bytes:                              #async means the function can perform tasks without blocking the program
     async def _run():
-        communicate = edge_tts.Communicate(text=text, voice=voice)
-        buf = io.BytesIO()
-        async for chunk in communicate.stream():
-            if chunk["type"] == "audio":
+        communicate = edge_tts.Communicate(text=text, voice=voice)           #create tts engine
+        buf = io.BytesIO()                                                  #creates a fake file in RAM
+        async for chunk in communicate.stream():                            #TTS audio is received in chunks
+            if chunk["type"] == "audio":                                  #only process actual audio data
                 buf.write(chunk["data"])
-        buf.seek(0)
+        buf.seek(0)                                                           #move cursor to start for read
         return buf.read()
-    return asyncio.run(_run())
+    return asyncio.run(_run())                                             #Reads all MP3 data from memory
+
 
 
 def get_tts_bytes(text: str, voice: str) -> io.BytesIO:
-    key = hashlib.md5((text + voice).encode()).hexdigest()
+    key = hashlib.md5((text + voice).encode()).hexdigest()                       #Creates unique cache key , same hash (text + voice)
     if key not in _tts_cache:
         _tts_cache[key] = _synthesize(text, voice)
     return io.BytesIO(_tts_cache[key])
@@ -210,9 +196,7 @@ def get_voice(lang: str) -> str:
     return VOICE_UR if lang == "ur" else VOICE_EN
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 #  UI STRINGS
-# ══════════════════════════════════════════════════════════════════════════════
 
 _UI = {
     "en": {
@@ -263,9 +247,7 @@ def ui(key: str, lang: str, **kw) -> str:
     return s.format(**kw) if kw else s
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 #  SCREENING QUESTIONS
-# ══════════════════════════════════════════════════════════════════════════════
 
 _SCREENING_QS = [
     {"id": "feeling_nervous",
@@ -351,7 +333,7 @@ def _feature_qs(condition: str) -> list:
     if condition == "depression": return DEPRESSION_FEATURE_QUESTIONS
     return []
 
-
+#it formats question text,checks question type,decides what options to show,prepares final question
 def _resolve_feature(q: dict, lang: str) -> dict:
     text  = q["question_ur"] if lang == "ur" else q["question_en"]
     itype = q["input_type"]
@@ -375,9 +357,7 @@ def _resolve_feature(q: dict, lang: str) -> dict:
     return {"question": text, "options": None}
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 #  INPUT VALIDATION
-# ══════════════════════════════════════════════════════════════════════════════
 
 _UR_MAP = {
     "ہاں": "Yes", "نہیں": "No", "نہيں": "No",
@@ -411,7 +391,7 @@ def validate_feature_input(raw: str, q: dict, lang: str):
             return False, None, f"⚠️ {ui('err_range', lang, lo=lo, hi=hi)}\n👉 {q_txt}"
         return True, int(num) if num == int(num) else num, None
 
-    if itype in ("radio", "select"):
+    if itype in ("radio", "select"):         #yes/no
         opts_key = "options_ur" if lang == "ur" else "options_en"
         options  = q.get(opts_key) or []
         for opt in options:
@@ -419,7 +399,7 @@ def validate_feature_input(raw: str, q: dict, lang: str):
                 return True, val, None
             if isinstance(opt, dict) and opt.get("label") == val:
                 return True, opt.get("value", val), None
-        mapped = _UR_MAP.get(val, val)
+        mapped = _UR_MAP.get(val, val)                                #convert urdu answers to eng format
         return True, mapped, None
 
     if itype == "stress_gender":
@@ -441,9 +421,7 @@ def validate_feature_input(raw: str, q: dict, lang: str):
     return True, val, None
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 #  LEVEL MAPPING
-# ══════════════════════════════════════════════════════════════════════════════
 
 def _map_level(prediction, condition: str) -> str:
     try:
@@ -468,18 +446,14 @@ def _map_level(prediction, condition: str) -> str:
     return "medium"
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 #  LEVEL LOOKUP DICTS
-# ══════════════════════════════════════════════════════════════════════════════
 
 _LEVEL_ORDER  = {"low": 0, "medium": 1, "high": 2}
 _LEVEL_NAME   = {0: "low", 1: "medium", 2: "high"}
 _LEVEL_TO_INT = {"low": 0, "medium": 1, "high": 2}
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 #  CONDITION LABEL HELPER
-# ══════════════════════════════════════════════════════════════════════════════
 
 def _condition_label(condition: str, lang: str) -> str:
     key_map = {
@@ -490,9 +464,7 @@ def _condition_label(condition: str, lang: str) -> str:
     return ui(key_map.get(condition, "condition_anxiety"), lang)
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 #  CBT RESPONSE BUILDER
-# ══════════════════════════════════════════════════════════════════════════════
 
 def build_cbt_message(
     condition:      str,
@@ -551,9 +523,7 @@ def build_cbt_message(
     )
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 #  TTS ENDPOINT
-# ══════════════════════════════════════════════════════════════════════════════
 
 @app.route("/tts", methods=["GET", "POST"])
 def tts():
@@ -589,9 +559,7 @@ def tts():
         return jsonify({"error": str(exc)}), 500
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 #  CHAT ENDPOINT
-# ══════════════════════════════════════════════════════════════════════════════
 
 @app.route("/chat", methods=["POST"])
 def chat():
@@ -633,7 +601,7 @@ def chat():
         flush=True,
     )
 
-    # ── GREETING ──────────────────────────────────────────────────────────────
+    # ── GREETING 
     if sess["stage"] == "greeting":
         sess["stage"] = "pre_screening"
         msg = ui("greeting", lang)
@@ -643,7 +611,7 @@ def chat():
             print(f"[chat/greeting] ⚠️  MongoDB save failed: {db_exc}", flush=True)
         return jsonify({"message": msg, "stage": "pre_screening"})
 
-    # ── PRE-SCREENING ─────────────────────────────────────────────────────────
+    # ── PRE-SCREENING 
     if sess["stage"] == "pre_screening":
         sess["stage"]           = "screening"
         sess["screening_index"] = 0
@@ -654,7 +622,7 @@ def chat():
             print(f"[chat/pre_screening] ⚠️  MongoDB save failed: {db_exc}", flush=True)
         return jsonify({"message": q["question"], "options": q["options"]})
 
-    # ── SCREENING ─────────────────────────────────────────────────────────────
+    # ── SCREENING 
     if sess["stage"] == "screening":
         idx = sess["screening_index"]
         try:
@@ -709,7 +677,7 @@ def chat():
             print(f"[chat/screening] ⚠️  MongoDB save failed: {db_exc}", flush=True)
         return jsonify({"message": msg, "stage": "thankyou"})
 
-    # ── THANKYOU → first feature question ────────────────────────────────────
+    # ── THANKYOU → first feature question 
     if sess["stage"] == "thankyou":
         sess["stage"]         = "features"
         sess["feature_index"] = 0
@@ -725,7 +693,7 @@ def chat():
             payload["options"] = info["options"]
         return jsonify(payload)
 
-    # ── FEATURE QUESTIONS ─────────────────────────────────────────────────────
+    # ── FEATURE QUESTIONS
     if sess["stage"] == "features":
         condition = sess["condition"]
         questions = _feature_qs(condition)
@@ -775,18 +743,14 @@ def chat():
                 payload["options"] = info["options"]
             return jsonify(payload)
 
-        # ══════════════════════════════════════════════════════════════════════
         # ALL FEATURE QUESTIONS ANSWERED — begin fusion + prediction pipeline
-        # ══════════════════════════════════════════════════════════════════════
         sess["stage"] = "done"
         level         = "medium"
         prediction    = None
         features      = dict(sess["feature_answers"])
         combined      = {}
 
-        # ══════════════════════════════════════════════════════════════════════
         # STAGE A — ML PREDICTION
-        # ══════════════════════════════════════════════════════════════════════
         try:
             print(
                 f"[chat/stageA] Running ML for condition='{condition}'  "
@@ -823,9 +787,7 @@ def chat():
                 print(f"[chat/stageA] ⚠️  Level mapping error: {exc}", flush=True)
                 level = _map_level(prediction, condition)
 
-        # ══════════════════════════════════════════════════════════════════════
         # STAGE B — VOICE + TEXT FUSION
-        # ══════════════════════════════════════════════════════════════════════
         try:
             if prediction is not None:
                 try:
@@ -871,9 +833,7 @@ def chat():
             )
             _tb.print_exc()
 
-        # ══════════════════════════════════════════════════════════════════════
         # STAGE C — CBT TEMPLATE SELECTION
-        # ══════════════════════════════════════════════════════════════════════
         try:
             cbt_text = build_cbt_message(
                 condition,
@@ -887,7 +847,7 @@ def chat():
             _tb.print_exc()
             cbt_text = ui("fallback", lang)
 
-        # ── MongoDB: save prediction + final CBT message ──────────────────
+        # ── MongoDB: save prediction + final CBT message 
         try:
             screening_scores = engine.calculate_screening_scores(sess["screening_answers"])
             save_prediction(
@@ -903,7 +863,6 @@ def chat():
             print(f"[chat/result] ✅ MongoDB saved prediction + CBT message", flush=True)
         except Exception as db_exc:
             print(f"[chat/result] ⚠️  MongoDB save failed: {db_exc}", flush=True)
-        # ─────────────────────────────────────────────────────────────────
 
         return jsonify({
             "message":        cbt_text,
@@ -915,9 +874,7 @@ def chat():
     return jsonify({"message": ui("session_done", lang)})
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 #  UTILITY ENDPOINTS
-# ══════════════════════════════════════════════════════════════════════════════
 
 @app.route("/screening", methods=["POST"])
 def screening_route():
@@ -1015,7 +972,7 @@ def feedback_route():
     _feedback_log.append(entry)
     print(f"[FEEDBACK] {entry}", flush=True)
 
-    # ── MongoDB: save feedback ────────────────────────────────────────────
+    # ── MongoDB: save feedback 
     try:
         save_feedback(
             session_id    = entry["session_id"],
@@ -1026,7 +983,6 @@ def feedback_route():
         print(f"[feedback] ✅ MongoDB saved feedback", flush=True)
     except Exception as db_exc:
         print(f"[feedback] ⚠️  MongoDB save failed: {db_exc}", flush=True)
-    # ─────────────────────────────────────────────────────────────────────
 
     total      = len(_feedback_log)
     positives  = sum(1 for e in _feedback_log if e["type"] == "up")
