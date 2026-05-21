@@ -1,0 +1,259 @@
+<style>
+.stepper{padding:16px 0;font-family:var(--font-sans)}
+.stage-dots{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:18px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--color-border-secondary);cursor:pointer;transition:background .2s}
+.dot.active{background:#534AB7}
+.dot.done{background:#1D9E75}
+.stage-label{text-align:center;font-size:11px;color:var(--color-text-secondary);margin-bottom:14px;letter-spacing:.04em}
+.card{border:1px solid var(--color-border-tertiary);border-radius:12px;padding:20px 20px 16px;background:var(--color-background-secondary)}
+.card-title{font-size:14px;font-weight:500;color:var(--color-text-primary);margin:0 0 4px}
+.card-sub{font-size:12px;color:var(--color-text-secondary);margin:0 0 14px}
+.flow{display:flex;flex-direction:column;gap:0}
+.box{border-radius:8px;padding:10px 14px;margin:0}
+.box-title{font-size:13px;font-weight:500;margin:0 0 2px}
+.box-sub{font-size:11px;margin:0;opacity:.75}
+.arrow{display:flex;justify-content:center;align-items:center;height:22px;color:var(--color-text-secondary);font-size:16px}
+.row{display:flex;gap:10px}
+.row .box{flex:1}
+.row-arrow{display:flex;justify-content:space-around;height:22px;align-items:center;color:var(--color-text-secondary);font-size:16px}
+.note{font-size:11px;color:var(--color-text-secondary);margin-top:10px;padding:8px 12px;border-radius:6px;border:1px solid var(--color-border-tertiary);background:var(--color-background-primary)}
+.pill{display:inline-block;font-size:10px;padding:2px 7px;border-radius:20px;margin:2px 2px 0 0}
+.nav{display:flex;justify-content:space-between;align-items:center;margin-top:16px}
+.btn{font-size:12px;padding:6px 16px;border-radius:6px;border:1px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary);cursor:pointer}
+.btn:disabled{opacity:.35;cursor:default}
+.btn.primary{background:#534AB7;border-color:#534AB7;color:#fff}
+.stage-counter{font-size:11px;color:var(--color-text-secondary)}
+.c-purple{background:#EEEDFE;border:1px solid #AFA9EC}.c-purple .box-title{color:#3C3489}.c-purple .box-sub{color:#534AB7}
+.c-teal{background:#E1F5EE;border:1px solid #5DCAA5}.c-teal .box-title{color:#085041}.c-teal .box-sub{color:#0F6E56}
+.c-coral{background:#FAECE7;border:1px solid #F0997B}.c-coral .box-title{color:#712B13}.c-coral .box-sub{color:#993C1D}
+.c-amber{background:#FAEEDA;border:1px solid #EF9F27}.c-amber .box-title{color:#633806}.c-amber .box-sub{color:#854F0B}
+.c-gray{background:#F1EFE8;border:1px solid #B4B2A9}.c-gray .box-title{color:#2C2C2A}.c-gray .box-sub{color:#5F5E5A}
+</style>
+
+<div class="stepper">
+  <div class="stage-dots" id="dots"></div>
+  <div class="stage-label" id="stage-label"></div>
+  <div class="card" id="card"></div>
+  <div class="nav">
+    <button class="btn" id="btn-prev" onclick="go(-1)">← Back</button>
+    <span class="stage-counter" id="counter"></span>
+    <button class="btn primary" id="btn-next" onclick="go(1)">Next →</button>
+  </div>
+</div>
+
+<script>
+const stages = [
+{
+  label:"Stage 1 — User sends voice",
+  title:"User records voice",
+  sub:"Microphone → MediaRecorder → audio blob (webm/ogg/mp4)",
+  html:`
+  <div class="flow">
+    <div class="box c-gray"><p class="box-title">User speaks into mic</p><p class="box-sub">Browser MediaRecorder records audio</p></div>
+    <div class="arrow">↓</div>
+    <div class="box c-gray"><p class="box-title">Audio blob created</p><p class="box-sub">Format: webm / ogg / mp4</p></div>
+    <div class="arrow">↓</div>
+    <div class="box c-purple"><p class="box-title">voiceApi.js — sendVoiceIntro()</p><p class="box-sub">POST /voice-intro with FormData (no manual Content-Type)</p></div>
+  </div>
+  <div class="note">The audio blob and session_id are sent as FormData — the browser sets the multipart boundary automatically.</div>`
+},
+{
+  label:"Stage 2 — Audio decode (VoiceInputHandler)",
+  title:"VoiceInputHandler.preprocess_audio()",
+  sub:"5 decode strategies tried in order until one succeeds",
+  html:`
+  <div class="flow">
+    <div class="box c-gray"><p class="box-title">Raw audio file received by Flask</p><p class="box-sub">Saved to temp file on disk</p></div>
+    <div class="arrow">↓</div>
+    <div class="box c-purple"><p class="box-title">VoiceInputHandler.preprocess_audio()</p><p class="box-sub">Tries each strategy until WAV is produced</p></div>
+    <div class="arrow">↓</div>
+    <div class="row">
+      <div class="box c-gray"><p class="box-title">1. ffmpeg</p><p class="box-sub">Most reliable</p></div>
+      <div class="box c-gray"><p class="box-title">2. PyAV float32</p><p class="box-sub">Fallback</p></div>
+      <div class="box c-gray"><p class="box-title">3. soundfile</p><p class="box-sub">Fallback</p></div>
+    </div>
+    <div class="arrow">↓</div>
+    <div class="row">
+      <div class="box c-gray"><p class="box-title">4. WAV direct</p><p class="box-sub">If already WAV</p></div>
+      <div class="box c-gray"><p class="box-title">5. pydub</p><p class="box-sub">Last resort</p></div>
+    </div>
+    <div class="arrow">↓</div>
+    <div class="box c-teal"><p class="box-title">Clean 16kHz mono WAV</p><p class="box-sub">Ready for STT and biomarker analysis</p></div>
+  </div>
+  <div class="note">Each strategy checks RMS energy. If audio is silent the pipeline returns neutral immediately — no further processing.</div>`
+},
+{
+  label:"Stage 3 — Speech to text",
+  title:"STT — Whisper",
+  sub:"Clean WAV → transcript text",
+  html:`
+  <div class="flow">
+    <div class="box c-teal"><p class="box-title">Clean WAV file</p><p class="box-sub">16kHz mono from VoiceInputHandler</p></div>
+    <div class="arrow">↓</div>
+    <div class="box c-purple"><p class="box-title">STT.convert_to_text()</p><p class="box-sub">Whisper model — language: "en" or "ur"</p></div>
+    <div class="arrow">↓</div>
+    <div class="box c-teal"><p class="box-title">Transcript text</p><p class="box-sub">Low confidence clips → cleared to empty string</p></div>
+  </div>
+  <div class="note">Silence tokens (e.g. "[BLANK_AUDIO]") are detected and replaced with empty string. Urdu text is optionally translated to English via MarianMT before emotion classification.</div>`
+},
+{
+  label:"Stage 4 — Parallel analysis (NLU + Biomarker)",
+  title:"NLU and VoiceBiomarker run in parallel",
+  sub:"Transcript → NLU   |   WAV audio → VoiceBiomarker",
+  html:`
+  <div class="row" style="align-items:flex-start">
+    <div style="flex:1;display:flex;flex-direction:column;gap:0">
+      <div class="box c-teal"><p class="box-title">NLU</p><p class="box-sub">Input: transcript text</p></div>
+      <div class="arrow">↓</div>
+      <div class="box c-teal"><p class="box-title">intent</p><p class="box-sub">distress / denial / help_seeking / positive / neutral</p></div>
+      <div class="arrow">↓</div>
+      <div class="box c-teal"><p class="box-title">boosts</p><p class="box-sub">anxiety_boost · stress_boost · sadness_boost</p></div>
+    </div>
+    <div style="width:16px;display:flex;align-items:center;justify-content:center;padding-top:30px;color:var(--color-text-secondary);font-size:11px">‖</div>
+    <div style="flex:1;display:flex;flex-direction:column;gap:0">
+      <div class="box c-purple"><p class="box-title">VoiceBiomarker</p><p class="box-sub">Input: audio waveform</p></div>
+      <div class="arrow">↓</div>
+      <div class="box c-purple"><p class="box-title">acoustic features</p><p class="box-sub">pitch Hz · tone (RMS) · mfcc_mean</p></div>
+      <div class="arrow">↓</div>
+      <div class="box c-purple"><p class="box-title">emotion_from_voice</p><p class="box-sub">anxious / stressed / depressed / sad / tense / neutral</p></div>
+    </div>
+  </div>
+  <div class="note">These two branches run on different inputs and independently. Their outputs are both passed into EmotionAnalyzer in the next step.</div>`
+},
+{
+  label:"Stage 5 — EmotionAnalyzer fusion",
+  title:"EmotionAnalyzer.classify_emotion()",
+  sub:"transcript + NLU output + biomarker output → fused emotion",
+  html:`
+  <div class="flow">
+    <div class="row">
+      <div class="box c-teal"><p class="box-title">transcript text</p><p class="box-sub">classified by DistilRoBERTa</p></div>
+      <div class="box c-teal"><p class="box-title">NLU boosts</p><p class="box-sub">intent · keywords</p></div>
+      <div class="box c-purple"><p class="box-title">emotion_from_voice</p><p class="box-sub">from biomarker</p></div>
+    </div>
+    <div class="arrow">↓</div>
+    <div class="box c-amber"><p class="box-title">Weighted fusion</p><p class="box-sub">voice weight 0.3–1.0 (rises when text is empty or Urdu)</p></div>
+    <div class="arrow">↓</div>
+    <div class="box c-amber"><p class="box-title">dominant_emotion</p><p class="box-sub">anxious / stressed / depressed / sad / excited / neutral</p></div>
+    <div class="arrow">↓</div>
+    <div class="box c-amber"><p class="box-title">voice_fusion scores stored in session</p><p class="box-sub">{anxiety, stress, sadness, depression, joy}</p></div>
+  </div>
+  <div class="note">If voice says "depressed" and fused_sadness > 0.05, dominant is forced to "depressed" regardless of text score.</div>`
+},
+{
+  label:"Stage 6 — Session stages (chat flow)",
+  title:"app.py session state machine",
+  sub:"Chat text answers collected across 5 stages",
+  html:`
+  <div class="flow">
+    <div class="box c-gray"><p class="box-title">Chat text input arrives</p><p class="box-sub">POST /chat — user types answers</p></div>
+    <div class="arrow">↓</div>
+    <div class="row">
+      <div class="box c-coral"><p class="box-title">greeting</p><p class="box-sub">Welcome message</p></div>
+      <div class="box c-coral"><p class="box-title">screening</p><p class="box-sub">8 PHQ-style questions 0–3</p></div>
+      <div class="box c-coral"><p class="box-title">thankyou</p><p class="box-sub">Condition routed</p></div>
+    </div>
+    <div class="arrow">↓</div>
+    <div class="row">
+      <div class="box c-coral"><p class="box-title">features</p><p class="box-sub">N condition-specific questions</p></div>
+      <div class="box c-coral"><p class="box-title">done</p><p class="box-sub">All answers collected</p></div>
+    </div>
+  </div>
+  <div class="note">Voice fusion scores from Stage 5 are already sitting in the session. They will be combined with the ML prediction in Stage 8.</div>`
+},
+{
+  label:"Stage 7 — ConversationEngine (ML prediction)",
+  title:"ConversationEngine",
+  sub:"Screening answers + feature answers → condition + level",
+  html:`
+  <div class="flow">
+    <div class="box c-gray"><p class="box-title">Screening answers</p><p class="box-sub">8 answers scored per domain</p></div>
+    <div class="arrow">↓</div>
+    <div class="box c-coral"><p class="box-title">router.py — route_condition()</p><p class="box-sub">Normalised avg score → anxiety / stress / depression</p></div>
+    <div class="arrow">↓</div>
+    <div class="box c-gray"><p class="box-title">Feature answers</p><p class="box-sub">N condition-specific answers</p></div>
+    <div class="arrow">↓</div>
+    <div class="box c-coral"><p class="box-title">predictor.py — predict()</p><p class="box-sub">Anxiety ML · Stress scale avg · Depression ML</p></div>
+    <div class="arrow">↓</div>
+    <div class="box c-coral"><p class="box-title">level_int</p><p class="box-sub">0 = low · 1 = medium · 2 = high</p></div>
+  </div>
+  <div class="note">Anxiety model returns a regression float — _normalise_anxiety_raw() maps it to 0/1/2. Stress falls back to averaging scale columns if ML fails.</div>`
+},
+{
+  label:"Stage 8 — EmotionFusionCombiner",
+  title:"EmotionFusionCombiner.combine()",
+  sub:"ML signal + voice_fusion → final condition and level",
+  html:`
+  <div class="flow">
+    <div class="row">
+      <div class="box c-coral"><p class="box-title">ML signal</p><p class="box-sub">condition + level_int (text, 70% weight)</p></div>
+      <div class="box c-amber"><p class="box-title">voice_fusion</p><p class="box-sub">from session (30% weight)</p></div>
+    </div>
+    <div class="arrow">↓</div>
+    <div class="box c-amber"><p class="box-title">Fusion mode selected</p><p class="box-sub">text_only / agree / voice_override / adjust_level</p></div>
+    <div class="arrow">↓</div>
+    <div class="box c-amber"><p class="box-title">Final: condition + level + voice_dominant</p><p class="box-sub">Voice overrides only if score ≥ 0.65 and margin ≥ 0.12</p></div>
+  </div>
+  <div class="note">If no voice data exists the mode is "text_only" and ML result passes through unchanged.</div>`
+},
+{
+  label:"Stage 9 — Template selection",
+  title:"template_selector.select_template()",
+  sub:"condition + level + voice_dominant + lang → CBT template",
+  html:`
+  <div class="flow">
+    <div class="box c-amber"><p class="box-title">condition · level · voice_dominant · lang</p><p class="box-sub">From EmotionFusionCombiner</p></div>
+    <div class="arrow">↓</div>
+    <div class="box c-purple"><p class="box-title">cbt_templates.json lookup</p><p class="box-sub">Indexed as {emotion: {level: entry}}</p></div>
+    <div class="arrow">↓</div>
+    <div class="box c-purple"><p class="box-title">voice_variants overlay</p><p class="box-sub">If voice_dominant matches a variant, steps are swapped</p></div>
+    <div class="arrow">↓</div>
+    <div class="box c-purple"><p class="box-title">Template returned</p><p class="box-sub">validation · steps · steps_alt · grounding · guided_questions</p></div>
+  </div>
+  <div class="note">prefer_alt_steps=True causes build_cbt_message() to use the alternate step set — chosen when voice emotion suggests a different therapeutic approach.</div>`
+},
+{
+  label:"Stage 10 — Response built and delivered",
+  title:"build_cbt_message() → frontend + MongoDB",
+  sub:"Final CBT text formatted, saved, and returned",
+  html:`
+  <div class="flow">
+    <div class="box c-purple"><p class="box-title">build_cbt_message()</p><p class="box-sub">Formats validation + grounding + steps (en/ur)</p></div>
+    <div class="arrow">↓</div>
+    <div class="row">
+      <div class="box c-gray"><p class="box-title">MongoDB</p><p class="box-sub">save_session · save_biomarkers · save_chat_message · save_prediction</p></div>
+      <div class="box c-teal"><p class="box-title">Frontend response</p><p class="box-sub">message · condition · level · voice_dominant · fusion scores</p></div>
+    </div>
+    <div class="arrow">↓</div>
+    <div class="box c-teal"><p class="box-title">TTS — edge-tts</p><p class="box-sub">CBT text → audio stream → user hears response</p></div>
+  </div>
+  <div class="note">The full loop is complete. Voice emotion shaped the level, the template selection, and possibly the step variant shown to the user.</div>`
+}
+];
+
+let cur = 0;
+
+function render(){
+  const s = stages[cur];
+  const dots = document.getElementById('dots');
+  dots.innerHTML = stages.map((_, i) =>
+    `<div class="dot ${i===cur?'active':i<cur?'done':''}" onclick="jump(${i})" title="Stage ${i+1}"></div>`
+  ).join('');
+  document.getElementById('stage-label').textContent = s.label;
+  document.getElementById('card').innerHTML =
+    `<p class="card-title">${s.title}</p><p class="card-sub">${s.sub}</p><div class="flow">${s.html}</div>`;
+  document.getElementById('counter').textContent = `${cur+1} / ${stages.length}`;
+  document.getElementById('btn-prev').disabled = cur===0;
+  document.getElementById('btn-next').textContent = cur===stages.length-1 ? 'Done' : 'Next →';
+  document.getElementById('btn-next').disabled = false;
+}
+
+function go(d){
+  cur = Math.max(0, Math.min(stages.length-1, cur+d));
+  render();
+}
+
+function jump(i){ cur=i; render(); }
+
+render();
+</script>
